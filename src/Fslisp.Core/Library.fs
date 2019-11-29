@@ -1,5 +1,4 @@
 ﻿namespace Fslisp.Core
 
 module Say =
-    let hello name =
-        printfn "Hello %s" name
+    let public hello name = sprintf "Hello %s" name

@@ -7,6 +7,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{63C4B9CC-A53
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Fslisp.Core", "src\Fslisp.Core\Fslisp.Core.fsproj", "{9D3C78E4-FDA6-4FA8-9BA1-A954950415DE}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{80EDB8D8-EB4C-452C-B84C-5FD60A8863BD}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Fslisp.Core.Tests", "tests\Fslisp.Core.Tests\Fslisp.Core.Tests.fsproj", "{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,8 +36,21 @@ Global
 		{9D3C78E4-FDA6-4FA8-9BA1-A954950415DE}.Release|x64.Build.0 = Release|Any CPU
 		{9D3C78E4-FDA6-4FA8-9BA1-A954950415DE}.Release|x86.ActiveCfg = Release|Any CPU
 		{9D3C78E4-FDA6-4FA8-9BA1-A954950415DE}.Release|x86.Build.0 = Release|Any CPU
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}.Debug|x64.Build.0 = Debug|Any CPU
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}.Debug|x86.Build.0 = Debug|Any CPU
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}.Release|x64.ActiveCfg = Release|Any CPU
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}.Release|x64.Build.0 = Release|Any CPU
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}.Release|x86.ActiveCfg = Release|Any CPU
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{9D3C78E4-FDA6-4FA8-9BA1-A954950415DE} = {63C4B9CC-A53B-4D7D-BDAB-FF073DB37BF2}
+		{0860CC1C-16A4-4DDB-9B7C-456C3552B5E2} = {80EDB8D8-EB4C-452C-B84C-5FD60A8863BD}
 	EndGlobalSection
 EndGlobal
