@@ -2,7 +2,7 @@ namespace Fslisp.Core
 
 [<RequireQualifiedAccess>]
 type Sexp<'T> =
-    | Num of double
+    | Num of float
     | Sym of string
     | Str of string
     | Cons of Sexp<'T> * Sexp<'T>
@@ -12,13 +12,26 @@ type Sexp<'T> =
 
 [<RequireQualifiedAccess>]
 module Sexp =
+    let rec map mapping s =
+        match s with
+        | Sexp.Num n -> Sexp.Num n
+        | Sexp.Sym s -> Sexp.Sym s
+        | Sexp.Str s -> Sexp.Str s
+        | Sexp.Cons (a, b) -> Sexp.Cons (map mapping a, map mapping b)
+        | Sexp.Nil -> Sexp.Nil
+        | Sexp.Bool b -> Sexp.Bool b
+        | Sexp.Pure v -> Sexp.Pure (mapping v)
+
     let test s =
         match s with
         | Sexp.Bool b -> b
         | _ -> true
 
+    let ListLike ss t =
+        List.foldBack (fun a b -> Sexp.Cons(a, b)) ss t
+
     let List ss =
-        List.foldBack (fun a b -> Sexp.Cons(a, b)) ss Sexp.Nil
+        ListLike ss Sexp.Nil
 
     let rec (|List|_|) s =
         match s with
