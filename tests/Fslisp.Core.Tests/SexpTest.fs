@@ -77,40 +77,40 @@ let sexpPatternDeconstructionTest() =
     )
 
 [<Fact>]
-let sexpPrettyPrint() =
-    Assert.Equal("123", Sexp.prettyPrint id (Sexp.Num 123.0))
-    Assert.Equal("3.14", Sexp.prettyPrint id (Sexp.Num 3.14))
-    Assert.Equal("foo", Sexp.prettyPrint id (Sexp.Sym "foo"))
+let sexpToString() =
+    Assert.Equal("123", (Sexp.Num 123.0).ToString())
+    Assert.Equal("3.14", (Sexp.Num 3.14).ToString())
+    Assert.Equal("foo", (Sexp.Sym "foo").ToString())
     Assert.Equal(
         "\"Hello\\nWorld\"",
-        Sexp.prettyPrint id (Sexp.Str "Hello\nWorld")
+        (Sexp.Str "Hello\nWorld").ToString()
     )
     Assert.Equal(
         "(#t . #f)",
-        Sexp.prettyPrint id (Sexp.Cons (Sexp.Bool true, Sexp.Bool false))
+        (Sexp.Cons (Sexp.Bool true, Sexp.Bool false)).ToString()
     )
     Assert.Equal(
         "(#t #f c)",
-        Sexp.prettyPrint id (Sexp.List [Sexp.Bool true; Sexp.Bool false; Sexp.Sym "c"])
+        (Sexp.List [Sexp.Bool true; Sexp.Bool false; Sexp.Sym "c"]).ToString()
     )
     Assert.Equal(
         "()",
-        Sexp.prettyPrint id Sexp.Nil
+        Sexp.Nil.ToString()
     )
     Assert.Equal(
         "'(#t #f c)",
-        Sexp.prettyPrint id (Sexp.Quote (Sexp.List [
+        (Sexp.Quote (Sexp.List [
             Sexp.Bool true
             Sexp.Bool false
             Sexp.Sym "c"
-        ]))
+        ])).ToString()
     )
     Assert.Equal(
         "`(#t #f ,c ,@d)",
-        Sexp.prettyPrint id (Sexp.Quasiquote (Sexp.List [
+        (Sexp.Quasiquote (Sexp.List [
             Sexp.Bool true
             Sexp.Bool false
             Sexp.Unquote (Sexp.Sym "c")
             Sexp.UnquoteSplicing (Sexp.Sym "d")
-       ]))
+       ])).ToString()
     )

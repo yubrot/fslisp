@@ -10,6 +10,41 @@ type Sexp<'T> =
     | Bool of bool
     | Pure of 'T
 
+    override self.ToString() =
+        let escape =
+            String.collect (function
+                | '\\' -> "\\\\"
+                | '\t' -> "\\t"
+                | '\n' -> "\\n"
+                | '"' -> "\\\""
+                | c -> c.ToString()
+            )
+        let rec cons a b =
+            match b with
+            | Nil -> a.ToString()
+            | Cons (b, c) -> sprintf "%s %s" (a.ToString()) (cons b c)
+            | b -> sprintf "%s . %s" (a.ToString()) (b.ToString())
+
+        match self with
+        | Num n ->
+            if n % 1.0 = 0.0 then
+                sprintf "%d" (int64 n)
+            else
+                sprintf "%A" n
+        | Sym s -> s
+        | Str s -> sprintf "\"%s\"" (escape s)
+        // FIXME: I want to use active patterns here but I couldn't figure
+        //        out a good way (it seems impossible?)
+        | Cons (Sym "quote", Cons (s, Nil)) -> sprintf "'%s" (s.ToString())
+        | Cons (Sym "quasiquote", Cons (s, Nil)) -> sprintf "`%s" (s.ToString())
+        | Cons (Sym "unquote", Cons (s, Nil)) -> sprintf ",%s" (s.ToString())
+        | Cons (Sym "unquote-splicing", Cons (s, Nil)) -> sprintf ",@%s" (s.ToString())
+        | Cons (a, b) -> sprintf "(%s)" (cons a b)
+        | Nil -> "()"
+        | Bool true -> "#t"
+        | Bool false -> "#f"
+        | Pure p -> p.ToString()
+
 [<RequireQualifiedAccess>]
 module Sexp =
     let rec map mapping s =
@@ -62,37 +97,3 @@ module Sexp =
 
     let (|UnquoteSplicing|_|) s =
         match s with List [Sexp.Sym "unquote-splicing"; s] -> Some s | _ -> None
-
-    let prettyPrint prettyPrintPure s =
-        let escape =
-            String.collect (function
-                | '\\' -> "\\\\"
-                | '\t' -> "\\t"
-                | '\n' -> "\\n"
-                | '"' -> "\\\""
-                | c -> c.ToString()
-            )
-        let rec sexp s =
-            match s with
-            | Sexp.Num n ->
-                if n % 1.0 = 0.0 then
-                    sprintf "%d" (int64 n)
-                else
-                    sprintf "%A" n
-            | Sexp.Sym s -> s
-            | Sexp.Str s -> sprintf "\"%s\"" (escape s)
-            | Quote s -> sprintf "'%s" (sexp s)
-            | Quasiquote s -> sprintf "`%s" (sexp s)
-            | Unquote s -> sprintf ",%s" (sexp s)
-            | UnquoteSplicing s -> sprintf ",@%s" (sexp s)
-            | Sexp.Cons (a, b) -> sprintf "(%s)" (cons a b)
-            | Sexp.Nil -> "()"
-            | Sexp.Bool true -> "#t"
-            | Sexp.Bool false -> "#f"
-            | Sexp.Pure p -> prettyPrintPure p
-        and cons a b =
-            match b with
-            | Sexp.Nil -> sexp a
-            | Sexp.Cons (b, c) -> sprintf "%s %s" (sexp a) (cons b c)
-            | b -> sprintf "%s . %s" (sexp a) (sexp b)
-        sexp s
