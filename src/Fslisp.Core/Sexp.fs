@@ -69,7 +69,7 @@ module Sexp =
                 | '\\' -> "\\\\"
                 | '\t' -> "\\t"
                 | '\n' -> "\\n"
-                | '"' -> "\""
+                | '"' -> "\\\""
                 | c -> c.ToString()
             )
         let rec sexp s =

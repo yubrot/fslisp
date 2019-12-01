@@ -1,0 +1,3 @@
+[submodule "lispboot"]
+	path = lispboot
+	url = https://github.com/yubrot/lispboot.git

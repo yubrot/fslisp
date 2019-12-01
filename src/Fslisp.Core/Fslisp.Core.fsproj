@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="Sexp.fs" />
     <Compile Include="Parser.fs" />
+    <Compile Include="TestRunner.fs" />
   </ItemGroup>
 
   <ItemGroup>
