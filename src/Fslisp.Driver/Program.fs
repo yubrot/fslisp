@@ -3,11 +3,14 @@ open Fslisp.Core
 
 [<EntryPoint>]
 let main argv =
-    match Array.toList argv with
-    | "-test" :: tests ->
-        for test in tests do
-            use fs = File.OpenRead(test)
-            TestRunner.run fs
+    match argv with
+    | [| "-test"; test |] ->
+        use fs = File.OpenRead(test)
+        let fails = TestRunner.run fs
+        if fails = 0 then
+            0
+        else
+            eprintfn "Total %d tests failed." fails
+            1
     | ls ->
-        ()
-    0
+        0

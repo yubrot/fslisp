@@ -91,11 +91,15 @@ let parseTestCases (src: Stream): TestCase list =
 let runTestCase { Header = header; Command = command } =
     try
         Command.execute command
+        false
     with
     | CommandFailedException msg ->
         eprintfn "Test failed at %s: %s" header msg
+        true
 
 let run src =
     src
     |> parseTestCases
-    |> List.iter runTestCase
+    |> Seq.map runTestCase
+    |> Seq.filter id
+    |> Seq.length
