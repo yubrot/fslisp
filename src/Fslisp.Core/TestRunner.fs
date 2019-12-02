@@ -13,6 +13,7 @@ type Command =
     | EvalFailure of input:string
     | EvalAll of input:string
 
+[<RequireQualifiedAccess>]
 module Command =
     let private fail msg =
         raise (CommandFailedException msg)

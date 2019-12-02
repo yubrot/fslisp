@@ -2,6 +2,7 @@ module Fslisp.Core.Parser
 
 open FParsec
 
+[<RequireQualifiedAccess>]
 module private Token =
     let ambient =
         choice [
@@ -38,6 +39,7 @@ module private Token =
             | c -> string c)
         lex (between (pstring "\"") (pstring "\"") (stringsSepBy normal escaped))
 
+[<RequireQualifiedAccess>]
 module private Grammar =
     let S, SRef = createParserForwardedToRef<Sexp<unit>, unit>()
 

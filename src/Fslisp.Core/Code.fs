@@ -19,47 +19,54 @@ type Inst<'T> =
 
 and Code<'T> = Inst<'T> seq
 
+[<RequireQualifiedAccess>]
 module CodePrinter =
     let printToString code =
         let mutable blockId = 0
         let blocks = new List<StringBuilder>()
 
-        let rec instToString inst =
+        let (<+) (buf: StringBuilder) (a: obj) = buf.Append(a)
+
+        let rec printInst (buf: StringBuilder) inst =
             match inst with
             | Inst.Ldc c ->
-                "ldc " + c.ToString()
+                buf <+ "ldc " <+ c
             | Inst.Ldv v ->
-                "ldv " + v
+                buf <+ "ldv " <+ v
             | Inst.Ldf (pattern, code) ->
-                "ldf " + addCode ("fun " + pattern.ToString()) code
+                buf <+ "ldf " <+ printCode ("fun " + pattern.ToString()) code
             | Inst.Ldm (pattern, code) ->
-                "ldm " + addCode ("macro " + pattern.ToString()) code
+                buf <+ "ldm " <+ printCode ("macro " + pattern.ToString()) code
             | Inst.Ldb s ->
-                "ldb " + s
+                buf <+ "ldb " <+ s
             | Inst.Sel (a, b) ->
-                let a = addCode "then" a
-                let b = addCode "else" b
-                sprintf "sel %s %s" a b
+                let a = printCode "then" a
+                let b = printCode "else" b
+                buf <+ "sel " <+ a <+ " " <+ b
             | Inst.App n ->
-                sprintf "app %d" n
+                buf <+ "app " <+ n
             | Inst.Leave ->
-                "leave"
+                buf <+ "leave"
             | Inst.Pop ->
-                "pop"
+                buf <+ "pop"
             | Inst.Def s ->
-                "def " + s
+                buf <+ "def " <+ s
             | Inst.Set s ->
-                "set " + s
+                buf <+ "set " <+ s
 
-        and addCode header code =
+        and printCode header code =
             let id = sprintf "[%d %s]" blockId header
             let buf = StringBuilder()
             blockId <- blockId + 1
             blocks.Add(buf)
-            buf.Append(id + "\n") |> ignore
+            buf <+ id <+ "\n" |> ignore
             for inst in code do
-                inst |> instToString |> sprintf "  %s\n" |> buf.Append |> ignore
+                buf <+ "  " |> ignore
+                printInst buf inst |> ignore
+                buf <+ "\n" |> ignore
             id
 
-        addCode "entry" code |> ignore
-        blocks |> Seq.map (fun block -> block.ToString()) |> String.concat ""
+        printCode "entry" code |> ignore
+
+        let buf = Seq.fold (<+) (StringBuilder()) blocks
+        buf.ToString()

@@ -35,10 +35,10 @@ type Sexp<'T> =
         | Str s -> sprintf "\"%s\"" (escape s)
         // FIXME: I want to use active patterns here but I couldn't figure
         //        out a good way (it seems impossible?)
-        | Cons (Sym "quote", Cons (s, Nil)) -> sprintf "'%s" (s.ToString())
-        | Cons (Sym "quasiquote", Cons (s, Nil)) -> sprintf "`%s" (s.ToString())
-        | Cons (Sym "unquote", Cons (s, Nil)) -> sprintf ",%s" (s.ToString())
-        | Cons (Sym "unquote-splicing", Cons (s, Nil)) -> sprintf ",@%s" (s.ToString())
+        | Cons (Sym "quote", Cons (s, Nil)) -> "'" + s.ToString()
+        | Cons (Sym "quasiquote", Cons (s, Nil)) -> "`" + s.ToString()
+        | Cons (Sym "unquote", Cons (s, Nil)) -> "," + s.ToString()
+        | Cons (Sym "unquote-splicing", Cons (s, Nil)) -> ",@" + s.ToString()
         | Cons (a, b) -> sprintf "(%s)" (cons a b)
         | Nil -> "()"
         | Bool true -> "#t"

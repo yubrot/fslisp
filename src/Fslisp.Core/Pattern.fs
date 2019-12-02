@@ -12,6 +12,7 @@ type Pattern =
             | None -> Sexp.Nil
         (Sexp.ListLike f r).ToString()
 
+[<RequireQualifiedAccess>]
 module Pattern =
     let rec build s =
         match s with

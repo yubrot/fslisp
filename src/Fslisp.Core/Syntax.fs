@@ -1,3 +1,4 @@
+[<RequireQualifiedAccess>]
 module Fslisp.Core.Syntax
 
 type ICompiler with
