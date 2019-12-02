@@ -11,6 +11,7 @@
     <Compile Include="SexpTest.fs" />
     <Compile Include="ParserTest.fs" />
     <Compile Include="EnvTest.fs" />
+    <Compile Include="PatternTest.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

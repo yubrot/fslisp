@@ -27,3 +27,10 @@ type Env<'T>(parent: Env<'T> option) =
         match self.Find key with
         | Some value -> value
         | None -> raise (UndefinedVariableException key)
+
+    // FIXME: Remove unnecessary Sexp dependence by
+    //        extracting this method as a type extension method
+    member self.Refer s =
+        match s with
+        | Sexp.Sym sym -> self.Find sym
+        | _ -> None

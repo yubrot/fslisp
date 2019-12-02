@@ -21,7 +21,12 @@ module Command =
         if actual.Trim() <> expected.Trim() then
             raise (CommandFailedException actual)
 
-    let execute command =
+    let private parseOrFail input =
+        match Parser.parseToEnd Parser.sexp "test" input with
+        | Error e -> fail e
+        | Ok s -> s
+
+    let execute env command =
         match command with
         | ParseSuccess (input, result) ->
             match Parser.parseToEnd Parser.sexp "test" input with
@@ -32,9 +37,17 @@ module Command =
             | Error _ -> ()
             | Ok s -> fail (s.ToString())
         | CompileSuccess (input, result) ->
-            ()
+            try
+                let code = Compiler(env).Compile (parseOrFail input) |> Seq.toArray
+                failIfDiffer (CodePrinter.printToString code) (result + "\n")
+            with
+            | EvaluationErrorException e -> fail e
         | CompileFailure input ->
-            ()
+            try
+                Compiler(env).Compile (parseOrFail input) |> Seq.toArray |> ignore
+                fail input
+            with
+            | EvaluationErrorException _ -> ()
         | EvalSuccess (input, result) ->
             ()
         | EvalFailure input ->
@@ -88,9 +101,9 @@ let parseTestCases (src: Stream): TestCase list =
             yield { Header = header; Command = command }
     ]
 
-let runTestCase { Header = header; Command = command } =
+let runTestCase env { Header = header; Command = command } =
     try
-        Command.execute command
+        Command.execute env command
         false
     with
     | CommandFailedException msg ->
@@ -98,8 +111,10 @@ let runTestCase { Header = header; Command = command } =
         true
 
 let run src =
+    let env = Env(None)
+    Syntax.install env
     src
     |> parseTestCases
-    |> Seq.map runTestCase
+    |> Seq.map (runTestCase env)
     |> Seq.filter id
     |> Seq.length

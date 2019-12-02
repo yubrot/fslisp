@@ -9,6 +9,11 @@
     <Compile Include="Sexp.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Env.fs" />
+    <Compile Include="Pattern.fs" />
+    <Compile Include="Code.fs" />
+    <Compile Include="Value.fs" />
+    <Compile Include="Compiler.fs" />
+    <Compile Include="Syntax.fs" />
     <Compile Include="TestRunner.fs" />
   </ItemGroup>
 
