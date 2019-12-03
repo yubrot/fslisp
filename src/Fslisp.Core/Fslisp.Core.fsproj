@@ -12,8 +12,11 @@
     <Compile Include="Pattern.fs" />
     <Compile Include="Code.fs" />
     <Compile Include="Value.fs" />
+    <Compile Include="VM.fs" />
+    <Compile Include="MacroExpander.fs" />
     <Compile Include="Compiler.fs" />
     <Compile Include="Syntax.fs" />
+    <Compile Include="Context.fs" />
     <Compile Include="TestRunner.fs" />
   </ItemGroup>
 

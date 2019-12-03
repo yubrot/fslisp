@@ -17,11 +17,15 @@ type Inst<'T> =
     | Def of string
     | Set of string
 
-and Code<'T> = Inst<'T> seq
+and Code<'T> =
+    { Instructions: Inst<'T> list }
 
-[<RequireQualifiedAccess>]
-module CodePrinter =
-    let printToString code =
+    member self.Next() =
+        match self.Instructions with
+        | [] -> None
+        | inst :: rest -> Some (inst, { Instructions = rest })
+
+    override self.ToString() =
         let mutable blockId = 0
         let blocks = new List<StringBuilder>()
 
@@ -60,13 +64,13 @@ module CodePrinter =
             blockId <- blockId + 1
             blocks.Add(buf)
             buf <+ id <+ "\n" |> ignore
-            for inst in code do
+            for inst in code.Instructions do
                 buf <+ "  " |> ignore
                 printInst buf inst |> ignore
                 buf <+ "\n" |> ignore
             id
 
-        printCode "entry" code |> ignore
+        printCode "entry" self |> ignore
 
         let buf = Seq.fold (<+) (StringBuilder()) blocks
         buf.ToString()

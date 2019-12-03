@@ -27,7 +27,7 @@ module Command =
         | Error e -> fail e
         | Ok s -> s
 
-    let execute env command =
+    let execute (ctx: Context) command =
         match command with
         | ParseSuccess (input, result) ->
             match Parser.parseToEnd Parser.sexp "test" input with
@@ -38,21 +38,21 @@ module Command =
             | Error _ -> ()
             | Ok s -> fail (s.ToString())
         | CompileSuccess (input, result) ->
-            try
-                let code = Compiler(env).Compile (parseOrFail input) |> Seq.toArray
-                failIfDiffer (CodePrinter.printToString code) (result + "\n")
-            with
-            | EvaluationErrorException e -> fail e
+            match ctx.Compile (parseOrFail input) with
+            | Error e -> fail e
+            | Ok s -> failIfDiffer (s.ToString()) (result + "\n")
         | CompileFailure input ->
-            try
-                Compiler(env).Compile (parseOrFail input) |> Seq.toArray |> ignore
-                fail input
-            with
-            | EvaluationErrorException _ -> ()
+            match ctx.Compile (parseOrFail input) with
+            | Error _ -> ()
+            | Ok s -> fail (s.ToString())
         | EvalSuccess (input, result) ->
-            ()
+            match ctx.Eval (parseOrFail input) with
+            | Error e -> fail e
+            | Ok s -> failIfDiffer (s.ToString()) result
         | EvalFailure input ->
-            ()
+            match ctx.Eval (parseOrFail input) with
+            | Error _ -> ()
+            | Ok s -> fail (s.ToString())
         | EvalAll input ->
             ()
 
@@ -102,20 +102,19 @@ let parseTestCases (src: Stream): TestCase list =
             yield { Header = header; Command = command }
     ]
 
-let runTestCase env { Header = header; Command = command } =
+let runTestCase (ctx: Context) { Header = header; Command = command } =
     try
-        Command.execute env command
+        Command.execute ctx command
         false
     with
     | CommandFailedException msg ->
         eprintfn "Test failed at %s: %s" header msg
         true
 
-let run src =
-    let env = Env(None)
-    Syntax.install env
+let run (ctx: Context) (src: Stream) =
     src
     |> parseTestCases
-    |> Seq.map (runTestCase env)
+    |> Seq.filter (fun testCase -> testCase.Header.Contains "testsuites") // FIXME: temporary disabled
+    |> Seq.map (runTestCase ctx)
     |> Seq.filter id
     |> Seq.length
