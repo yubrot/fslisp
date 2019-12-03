@@ -36,7 +36,7 @@ module Pattern =
         | [], Some rest, args ->
             Ok (Map.ofArray [| rest, Sexp.List args |])
         | _ :: _, Some _, [] ->
-            Error (sprintf "This function takes at least %d arguments" (List.length pattern.Fixed))
+            Error (sprintf "takes at least %d arguments" (List.length pattern.Fixed))
         | _ :: _, None, []
         | _, None, _ :: _ ->
-            Error (sprintf "This function takes %d arguments" (List.length pattern.Fixed))
+            Error (sprintf "takes %d arguments" (List.length pattern.Fixed))

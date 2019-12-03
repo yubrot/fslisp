@@ -1,26 +1,44 @@
 namespace Fslisp.Core
 
+open System.Collections.Generic
+
 type Compiler(env: Env<Value>) =
-    member self.Compile s =
-        seq {
-            match s with
-            | Sexp.Sym sym ->
-                yield Inst.Ldv sym
-            | Sexp.List (f :: args) ->
-                match env.Refer f with
-                | Some (Sexp.Pure (Syntax syntax)) ->
-                    match syntax.Compile self args with
-                    | Ok code -> yield! code
-                    | Error e -> raise (EvaluationErrorException ("Syntax error: " + e))
-                | _ ->
-                    yield! self.Compile f
-                    for arg in args do yield! self.Compile arg
-                    yield Inst.App (List.length args)
-            | Sexp.Cons _ ->
-                raise (EvaluationErrorException ("Compile error: improper list: " + s.ToString()))
-            | s ->
-                yield Inst.Ldc s
-        }
+    let code = List<Inst>()
+
+    member self.Complete(): Code =
+        { Instructions = List.ofSeq code }
+
+    member self.Do inst =
+        code.Add inst
+
+    member self.Eval s =
+        match s with
+        | Sexp.Sym sym ->
+            code.Add (Inst.Ldv sym)
+        | Sexp.List (f :: args) ->
+            match env.Refer f with
+            | Some (Sexp.Pure (Syntax syntax)) ->
+                syntax.Compile self args
+            | _ ->
+                self.Eval f
+                args |> List.iter self.Eval
+                self.Do (Inst.App (List.length args))
+        | Sexp.Cons _ ->
+            raise (CompileErrorException ("Improper list: " + s.ToString()))
+        | s ->
+            self.Do (Inst.Ldc s)
 
     interface ICompiler with
-        member self.Compile s = self.Compile s
+        member self.Do inst = self.Do inst
+
+        member self.Eval s = self.Eval s
+
+        member self.Block f =
+            let compiler = Compiler(env)
+            f compiler
+            compiler.Complete()
+
+    static member Compile (env: Env<Value>) (s: Value): Code =
+        let compiler = Compiler(env)
+        (compiler :> ICompiler).Eval s
+        compiler.Complete()

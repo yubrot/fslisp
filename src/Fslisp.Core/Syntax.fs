@@ -2,80 +2,72 @@
 module Fslisp.Core.Syntax
 
 type ICompiler with
-    member self.CompileDef sym x =
-        seq {
-            yield! self.Compile x
-            yield Inst.Def sym
-            yield Inst.Ldc Sexp.Nil
-        }
+    member self.Def sym x =
+        self.Eval x
+        self.Do (Inst.Def sym)
+        self.Do (Inst.Ldc Sexp.Nil)
 
-    member self.CompileSet sym x =
-        seq {
-            yield! self.Compile x
-            yield Inst.Set sym
-            yield Inst.Ldc Sexp.Nil
-        }
+    member self.Set sym x =
+        self.Eval x
+        self.Do (Inst.Set sym)
+        self.Do (Inst.Ldc Sexp.Nil)
 
-    member self.CompileBegin args =
+    member self.Begin args =
         match args with
         | [] ->
-            seq { Inst.Ldc Sexp.Nil }
+            self.Do (Inst.Ldc Sexp.Nil)
         | [arg] ->
-            self.Compile arg
+            self.Eval arg
         | arg :: args ->
-            seq {
-                yield! self.Compile arg
-                yield Inst.Pop
-                yield! self.CompileBegin args
-            }
+            self.Eval arg
+            self.Do Inst.Pop
+            self.Begin args
 
-    member self.CompileIf c t e =
-        seq {
-            yield! self.Compile c
-            let t = [ yield! self.Compile t; yield Inst.Leave ]
-            let e = [ yield! self.Compile e; yield Inst.Leave ]
-            yield Inst.Sel (t, e)
-        }
+    member self.If c t e =
+        self.Eval c
+        let t = self.Block (fun c -> c.Eval t; c.Do Inst.Leave)
+        let e = self.Block (fun c -> c.Eval e; c.Do Inst.Leave)
+        self.Do (Inst.Sel (t, e))
 
-    member self.CompileFun pattern body =
-        let body = [ yield! self.CompileBegin body; yield Inst.Leave ]
-        seq { Inst.Ldf (pattern, body) }
+    member self.Fun pattern body =
+        let body = self.Block (fun c -> c.Begin body; c.Do Inst.Leave)
+        self.Do (Inst.Ldf (pattern, body))
 
-    member self.CompileMacro pattern body =
-        let body = [ yield! self.CompileBegin body ]
-        seq { Inst.Ldm (pattern, body) }
+    member self.Macro pattern body =
+        let body = self.Block (fun c -> c.Begin body)
+        self.Do (Inst.Ldm (pattern, body))
 
-    member self.CompileBuiltin sym =
-        seq { Inst.Ldb sym }
+    member self.Builtin sym =
+        self.Do (Inst.Ldb sym)
 
-    member self.CompileQuote s =
-        seq { Inst.Ldc s }
+    member self.Quote s =
+        self.Do (Inst.Ldc s)
 
 type Def() =
     interface ISyntax with
         member __.Compile compiler args =
             match args with
-            | [Sexp.Sym sym; x] -> Ok (compiler.CompileDef sym x)
-            | _ -> Error "expected (def sym x)"
+            | [Sexp.Sym sym; x] -> compiler.Def sym x
+            | _ -> raise (SyntaxErrorException "expected (def sym x)")
 
 type Set() =
     interface ISyntax with
         member __.Compile compiler args =
             match args with
-            | [Sexp.Sym sym; x] -> Ok (compiler.CompileSet sym x)
-            | _ -> Error "expected (set sym x)"
+            | [Sexp.Sym sym; x] -> compiler.Set sym x
+            | _ -> raise (SyntaxErrorException "expected (set sym x)")
 
 type Begin() =
     interface ISyntax with
         member __.Compile compiler args =
-            Ok (compiler.CompileBegin args)
+            compiler.Begin args
 
 type If() =
     interface ISyntax with
         member __.Compile compiler args =
             match args with
-            | [c; t; e] -> Ok (compiler.CompileIf c t e)
-            | _ -> Error "expected (if cond then else)"
+            | [c; t; e] -> compiler.If c t e
+            | _ -> raise (SyntaxErrorException "expected (if cond then else)")
 
 type Fun() =
     interface ISyntax with
@@ -83,9 +75,9 @@ type Fun() =
             match args with
             | pattern :: body ->
                 match Pattern.build pattern with
-                | Ok pattern -> Ok (compiler.CompileFun pattern body)
-                | Error e -> Error ("invalid pattern " + e.ToString())
-            | _ -> Error "expected (fun pattern body...)"
+                | Ok pattern -> compiler.Fun pattern body
+                | Error e -> raise (SyntaxErrorException ("invalid pattern " + e.ToString()))
+            | _ -> raise (SyntaxErrorException "expected (fun pattern body...)")
 
 type Macro() =
     interface ISyntax with
@@ -93,23 +85,23 @@ type Macro() =
             match args with
             | pattern :: body ->
                 match Pattern.build pattern with
-                | Ok pattern -> Ok (compiler.CompileMacro pattern body)
-                | Error e -> Error ("invalid pattern " + e.ToString())
-            | _ -> Error "expected (macro pattern body...)"
+                | Ok pattern -> compiler.Macro pattern body
+                | Error e -> raise (SyntaxErrorException ("invalid pattern " + e.ToString()))
+            | _ -> raise (SyntaxErrorException "expected (macro pattern body...)")
 
 type Builtin() =
     interface ISyntax with
         member __.Compile compiler args =
             match args with
-            | [Sexp.Sym sym] -> Ok (compiler.CompileBuiltin sym)
-            | _ -> Error "expected (builtin sym)"
+            | [Sexp.Sym sym] -> compiler.Builtin sym
+            | _ -> raise (SyntaxErrorException "expected (builtin sym)")
 
 type Quote() =
     interface ISyntax with
         member __.Compile compiler args =
             match args with
-            | [s] -> Ok (compiler.CompileQuote s)
-            | _ -> Error "expected (quote expr)"
+            | [s] -> compiler.Quote s
+            | _ -> raise (SyntaxErrorException "expected (quote expr)")
 
 let install (env: Env<Value>) =
     let bind sym syntax = env.Define sym (Sexp.Pure (Syntax (syntax())))

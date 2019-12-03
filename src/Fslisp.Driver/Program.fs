@@ -3,10 +3,11 @@ open Fslisp.Core
 
 [<EntryPoint>]
 let main argv =
+    let ctx = Context()
     match argv with
     | [| "-test"; test |] ->
         use fs = File.OpenRead(test)
-        let fails = TestRunner.run fs
+        let fails = TestRunner.run ctx fs
         if fails = 0 then
             0
         else
