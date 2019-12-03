@@ -1,6 +1,16 @@
 [<RequireQualifiedAccess>]
 module Fslisp.Core.Syntax
 
+type IMacroExpander with
+    member self.ExpandArgs bs ss =
+        match bs, ss with
+        | true :: bs, s :: ss ->
+            self.Expand true s :: self.ExpandArgs bs ss
+        | false :: bs, s :: ss ->
+            s :: self.ExpandArgs bs ss
+        | _, rest ->
+            rest |> List.map (self.Expand true)
+
 type ICompiler with
     member self.Def sym x =
         self.Eval x
@@ -45,6 +55,8 @@ type ICompiler with
 
 type Def() =
     interface ISyntax with
+        member __.MacroExpand expander args =
+            expander.ExpandArgs [false; true] args
         member __.Compile compiler args =
             match args with
             | [Sexp.Sym sym; x] -> compiler.Def sym x
@@ -52,6 +64,8 @@ type Def() =
 
 type Set() =
     interface ISyntax with
+        member __.MacroExpand expander args =
+            expander.ExpandArgs [false; true] args
         member __.Compile compiler args =
             match args with
             | [Sexp.Sym sym; x] -> compiler.Set sym x
@@ -59,11 +73,15 @@ type Set() =
 
 type Begin() =
     interface ISyntax with
+        member __.MacroExpand expander args =
+            expander.ExpandArgs [] args
         member __.Compile compiler args =
             compiler.Begin args
 
 type If() =
     interface ISyntax with
+        member __.MacroExpand expander args =
+            expander.ExpandArgs [true; true; true] args
         member __.Compile compiler args =
             match args with
             | [c; t; e] -> compiler.If c t e
@@ -71,6 +89,8 @@ type If() =
 
 type Fun() =
     interface ISyntax with
+        member __.MacroExpand expander args =
+            expander.ExpandArgs [false; true] args
         member __.Compile compiler args =
             match args with
             | pattern :: body ->
@@ -81,6 +101,8 @@ type Fun() =
 
 type Macro() =
     interface ISyntax with
+        member __.MacroExpand expander args =
+            expander.ExpandArgs [false; true] args
         member __.Compile compiler args =
             match args with
             | pattern :: body ->
@@ -91,6 +113,8 @@ type Macro() =
 
 type Builtin() =
     interface ISyntax with
+        member __.MacroExpand expander args =
+            expander.ExpandArgs [false] args
         member __.Compile compiler args =
             match args with
             | [Sexp.Sym sym] -> compiler.Builtin sym
@@ -98,6 +122,8 @@ type Builtin() =
 
 type Quote() =
     interface ISyntax with
+        member __.MacroExpand expander args =
+            expander.ExpandArgs [false] args
         member __.Compile compiler args =
             match args with
             | [s] -> compiler.Quote s

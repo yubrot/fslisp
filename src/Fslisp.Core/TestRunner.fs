@@ -38,19 +38,19 @@ module Command =
             | Error _ -> ()
             | Ok s -> fail (s.ToString())
         | CompileSuccess (input, result) ->
-            match ctx.Try (fun () -> ctx.Compile (parseOrFail input)) with
+            match ctx.Compile (parseOrFail input) with
             | Error e -> fail e
             | Ok s -> failIfDiffer (s.ToString()) (result + "\n")
         | CompileFailure input ->
-            match ctx.Try (fun () -> ctx.Compile (parseOrFail input)) with
+            match ctx.Compile (parseOrFail input) with
             | Error _ -> ()
             | Ok s -> fail (s.ToString())
         | EvalSuccess (input, result) ->
-            match ctx.Try (fun () -> ctx.Eval (parseOrFail input)) with
+            match ctx.Eval (parseOrFail input) with
             | Error e -> fail e
             | Ok s -> failIfDiffer (s.ToString()) result
         | EvalFailure input ->
-            match ctx.Try (fun () -> ctx.Eval (parseOrFail input)) with
+            match ctx.Eval (parseOrFail input) with
             | Error _ -> ()
             | Ok s -> fail (s.ToString())
         | EvalAll input ->

@@ -40,11 +40,13 @@ type VM(env: Env<Value>, code: Code) =
     member self.Apply f args =
         match f with
         | Sexp.Pure (Fun (fenv, fpat, fcode)) ->
-            let env = Env(Some(fenv))
+            let env = Env(Some fenv)
             match Pattern.bind fpat args with
-            | Ok mapping -> mapping |> Map.iter env.Define
-            | Error e -> raise (InternalErrorException ("This function " + e))
-            self.Enter env fcode
+            | Ok mapping ->
+                Map.iter env.Define mapping
+                self.Enter env fcode
+            | Error e ->
+                raise (InternalErrorException ("This function " + e))
         | _ ->
             raise (EvaluationErrorException "Cannot call: ")
 
@@ -57,12 +59,12 @@ type VM(env: Env<Value>, code: Code) =
         | Inst.Ldf (pattern, code) ->
             self.Push (Sexp.Pure (Fun (env, pattern, code)))
         | Inst.Ldm (pattern, code) ->
-            raise (System.NotImplementedException "ldm")
+            self.Push (Sexp.Pure (Macro (env, pattern, code)))
         | Inst.Ldb name ->
             raise (System.NotImplementedException "ldb")
         | Inst.Sel (a, b) ->
             let branch = if self.Pop() |> Sexp.test then a else b
-            self.Enter (Env(Some(env))) branch
+            self.Enter (Env(Some env)) branch
         | Inst.App argc ->
             let mutable args = []
             for _ = 1 to argc do args <- self.Pop() :: args
