@@ -14,17 +14,17 @@ type Context() =
         | InternalErrorException e -> Error ("Internal error: " + e)
         | UndefinedVariableException s -> Error ("Undefined variable: " + s)
 
-    member __.Compile (expr: Value): Result<Code, string> =
+    member _.Compile (expr: Value): Result<Code<Value>, string> =
         Context.Wrap (fun () ->
             Compiler.Compile topLevel expr
         )
 
-    member __.MacroExpand (recurse: bool) (expr: Value): Result<Value, string> =
+    member _.MacroExpand (recurse: bool) (expr: Value): Result<Value, string> =
         Context.Wrap (fun () ->
             MacroExpander.MacroExpand topLevel recurse expr
         )
 
-    member __.Eval (expr: Value): Result<Value, string> =
+    member _.Eval (expr: Value): Result<Value, string> =
         Context.Wrap (fun () ->
             let expr = MacroExpander.MacroExpand topLevel true expr
             let code = Compiler.Compile topLevel expr

@@ -7,10 +7,10 @@ exception UndefinedVariableException of string
 type Env<'T>(parent: Env<'T> option) =
     let table = Dictionary<string, 'T>()
 
-    member self.Define key value =
+    member _.Define key value =
         table.[key] <- value
 
-    member self.Set key value =
+    member _.Set key value =
         if table.ContainsKey(key) then
             table.[key] <- value
         else
@@ -18,7 +18,7 @@ type Env<'T>(parent: Env<'T> option) =
             | Some env -> env.Set key value
             | None -> raise (UndefinedVariableException key)
 
-    member self.Find key =
+    member _.Find key =
         match table.TryGetValue(key) with
         | true, value -> Some value
         | false, _ -> parent |> Option.bind (fun env -> env.Find key)

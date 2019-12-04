@@ -4,16 +4,16 @@ exception EvaluationErrorException of string
 
 exception InternalErrorException of string
 
-type VM(env: Env<Value>, code: Code) =
+type VM(env: Env<Value>, code: Code<Value>) =
     let mutable stack = []
     let mutable code = code
     let mutable env = env
     let mutable dump = []
 
-    member self.Push value =
+    member _.Push (value: Value) =
         stack <- value :: stack
 
-    member self.Pop value =
+    member _.Pop(): Value =
         match stack with
         | head :: rest ->
             stack <- rest
@@ -21,14 +21,14 @@ type VM(env: Env<Value>, code: Code) =
         | _ ->
             raise (InternalErrorException "Inconsistent stack")
 
-    member self.Enter nextEnv nextCode =
+    member _.Enter (nextEnv: Env<Value>) (nextCode: Code<Value>) =
         match code.Instructions with
         | [Inst.Leave] -> () // tailcall: skip this frame
         | _ -> dump <- (env, code) :: dump
         env <- nextEnv
         code <- nextCode
 
-    member self.Leave() =
+    member _.Leave() =
         match dump with
         | (lastEnv, lastCode) :: rest ->
             env <- lastEnv
@@ -37,9 +37,9 @@ type VM(env: Env<Value>, code: Code) =
         | _ ->
             raise (InternalErrorException "Inconsistent dump")
 
-    member self.Apply f args =
+    member self.Apply (f: Value) (args: Value list) =
         match f with
-        | Sexp.Pure (Fun (fenv, fpat, fcode)) ->
+        | Sexp.Pure (Native.Fun (fenv, fpat, fcode)) ->
             let env = Env(Some fenv)
             match Pattern.bind fpat args with
             | Ok mapping ->
@@ -50,16 +50,16 @@ type VM(env: Env<Value>, code: Code) =
         | _ ->
             raise (EvaluationErrorException "Cannot call: ")
 
-    member self.RunInst inst =
+    member self.RunInst (inst: Inst<Value>) =
         match inst with
         | Inst.Ldc constant ->
             self.Push constant
         | Inst.Ldv variable ->
             self.Push (env.Get variable)
         | Inst.Ldf (pattern, code) ->
-            self.Push (Sexp.Pure (Fun (env, pattern, code)))
+            self.Push (Sexp.Pure (Native.Fun (env, pattern, code)))
         | Inst.Ldm (pattern, code) ->
-            self.Push (Sexp.Pure (Macro (env, pattern, code)))
+            self.Push (Sexp.Pure (Native.Macro (env, pattern, code)))
         | Inst.Ldb name ->
             raise (System.NotImplementedException "ldb")
         | Inst.Sel (a, b) ->
@@ -81,7 +81,7 @@ type VM(env: Env<Value>, code: Code) =
             let v = self.Pop()
             env.Set name v
 
-    member self.Run() =
+    member self.Run(): Value =
         match code.Next() with
         | Some (inst, rest) ->
             code <- rest
@@ -90,6 +90,5 @@ type VM(env: Env<Value>, code: Code) =
         | None ->
             self.Pop()
 
-    static member Execute (env: Env<Value>) (code: Code): Value =
+    static member Execute (env: Env<Value>) (code: Code<Value>): Value =
         VM(env, code).Run()
-

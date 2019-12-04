@@ -14,7 +14,7 @@ type Pattern =
 
 [<RequireQualifiedAccess>]
 module Pattern =
-    let rec build s =
+    let rec build (s: Sexp<'T>): Result<Pattern, Sexp<'T>> =
         match s with
         | Sexp.Sym sym ->
             Ok { Fixed = []; Rest = Some sym }
@@ -27,7 +27,7 @@ module Pattern =
         | s ->
             Error s
 
-    let rec bind pattern args =
+    let rec bind (pattern: Pattern) (args: Sexp<'T> list): Result<Map<string, Sexp<'T>>, string> =
         match pattern.Fixed, pattern.Rest, args with
         | p :: ps, rest, a :: args ->
             Result.map (Map.add p a) (bind { Fixed = ps; Rest = rest } args)

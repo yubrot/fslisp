@@ -5,116 +5,114 @@ open System.IO
 exception CommandFailedException of msg:string
 
 type Command =
-    | ParseSuccess of input:string * result:string
+    | ParseSuccess of input:string * output:string
     | ParseFailure of input:string
-    | CompileSuccess of input:string * result:string
+    | CompileSuccess of input:string * output:string
     | CompileFailure of input:string
-    | EvalSuccess of input:string * result:string
+    | EvalSuccess of input:string * output:string
     | EvalFailure of input:string
     | EvalAll of input:string
 
 [<RequireQualifiedAccess>]
 module Command =
-    let private fail msg =
-        raise (CommandFailedException msg)
+    let (>>) result f =
+        match result with
+        | Ok a -> f a
+        | Error e -> raise (CommandFailedException e)
 
-    let private failIfDiffer (actual: string) (expected: string) =
-        if actual.Trim() <> expected.Trim() then
-            raise (CommandFailedException actual)
+    let inline failure result =
+        match result with
+        | Ok a -> raise (CommandFailedException (a.ToString()))
+        | Error _ -> ()
 
-    let private parseOrFail input =
-        match Parser.parseToEnd Parser.sexp "test" input with
-        | Error e -> fail e
-        | Ok s -> s
+    let inline success output result =
+        match result with
+        | Ok a ->
+            if a.ToString().TrimEnd() <> output then
+                raise (CommandFailedException (a.ToString()))
+        | Error e ->
+                raise (CommandFailedException e)
 
-    let execute (ctx: Context) command =
+    let parse = Parser.parseToEnd Parser.sexp "test"
+
+    let execute (ctx: Context) (command: Command) =
         match command with
-        | ParseSuccess (input, result) ->
-            match Parser.parseToEnd Parser.sexp "test" input with
-            | Error e -> fail e
-            | Ok s -> failIfDiffer (s.ToString()) result
+        | ParseSuccess (input, output) ->
+            parse input |> success output
         | ParseFailure input ->
-            match Parser.parseToEnd Parser.sexp "test" input with
-            | Error _ -> ()
-            | Ok s -> fail (s.ToString())
-        | CompileSuccess (input, result) ->
-            match ctx.Compile (parseOrFail input) with
-            | Error e -> fail e
-            | Ok s -> failIfDiffer (s.ToString()) (result + "\n")
+            parse input |> failure
+        | CompileSuccess (input, output) ->
+            parse input >> ctx.Compile |> success output
         | CompileFailure input ->
-            match ctx.Compile (parseOrFail input) with
-            | Error _ -> ()
-            | Ok s -> fail (s.ToString())
-        | EvalSuccess (input, result) ->
-            match ctx.Eval (parseOrFail input) with
-            | Error e -> fail e
-            | Ok s -> failIfDiffer (s.ToString()) result
+            parse input >> ctx.Compile |> failure
+        | EvalSuccess (input, output) ->
+            parse input >> ctx.Eval |> success output
         | EvalFailure input ->
-            match ctx.Eval (parseOrFail input) with
-            | Error _ -> ()
-            | Ok s -> fail (s.ToString())
+            parse input >> ctx.Eval |> failure
         | EvalAll input ->
             ()
 
 type TestCase =
     { Header: string; Command: Command }
 
-let parseTestCases (src: Stream): TestCase list =
-    use reader = new StreamReader(src)
+[<RequireQualifiedAccess>]
+module TestCase =
+    let parse (src: Stream): TestCase list =
+        use reader = new StreamReader(src)
 
-    let readLines len =
-        seq { for i in 1..len -> reader.ReadLine() }
-        |> String.concat "\n"
+        let readLines len =
+            seq { for i in 1..len -> reader.ReadLine() }
+            |> String.concat "\n"
 
-    let readCommand header =
-        match reader.ReadLine().Split(' ') with
-        | [| "PARSE_SUCCESS"; input; result |] ->
-            let input = readLines (int input)
-            let result = readLines (int result)
-            ParseSuccess (input, result)
-        | [| "PARSE_FAILURE"; input |] ->
-            let input = readLines (int input)
-            ParseFailure input
-        | [| "COMPILE_SUCCESS"; input; result |] ->
-            let input = readLines (int input)
-            let result = readLines (int result)
-            CompileSuccess (input, result)
-        | [| "COMPILE_FAILURE"; input |] ->
-            let input = readLines (int input)
-            CompileFailure input
-        | [| "EVAL_SUCCESS"; input; result |] ->
-            let input = readLines (int input)
-            let result = readLines (int result)
-            EvalSuccess (input, result)
-        | [| "EVAL_FAILURE"; input |] ->
-            let input = readLines (int input)
-            EvalFailure input
-        | [| "EVAL_ALL"; input |] ->
-            let input = readLines (int input)
-            EvalAll input
-        | _ ->
-            failwithf "Unknown test command: %s" header
+        let readCommand header =
+            match reader.ReadLine().Split(' ') with
+            | [| "PARSE_SUCCESS"; input; output |] ->
+                let input = readLines (int input)
+                let output = readLines (int output)
+                ParseSuccess (input, output)
+            | [| "PARSE_FAILURE"; input |] ->
+                let input = readLines (int input)
+                ParseFailure input
+            | [| "COMPILE_SUCCESS"; input; output |] ->
+                let input = readLines (int input)
+                let output = readLines (int output)
+                CompileSuccess (input, output)
+            | [| "COMPILE_FAILURE"; input |] ->
+                let input = readLines (int input)
+                CompileFailure input
+            | [| "EVAL_SUCCESS"; input; output |] ->
+                let input = readLines (int input)
+                let output = readLines (int output)
+                EvalSuccess (input, output)
+            | [| "EVAL_FAILURE"; input |] ->
+                let input = readLines (int input)
+                EvalFailure input
+            | [| "EVAL_ALL"; input |] ->
+                let input = readLines (int input)
+                EvalAll input
+            | _ ->
+                failwithf "Unknown test command: %s" header
 
-    [
-        while not reader.EndOfStream do
-            let header = reader.ReadLine()
-            let command = readCommand header
-            yield { Header = header; Command = command }
-    ]
+        [
+            while not reader.EndOfStream do
+                let header = reader.ReadLine()
+                let command = readCommand header
+                yield { Header = header; Command = command }
+        ]
 
-let runTestCase (ctx: Context) { Header = header; Command = command } =
-    try
-        Command.execute ctx command
-        false
-    with
-    | CommandFailedException msg ->
-        eprintfn "Test failed at %s: %s" header msg
-        true
+    let run (ctx: Context) { Header = header; Command = command }: bool =
+        try
+            Command.execute ctx command
+            false
+        with
+        | CommandFailedException msg ->
+            eprintfn "Test failed at %s: %s" header msg
+            true
 
 let run (ctx: Context) (src: Stream) =
     src
-    |> parseTestCases
+    |> TestCase.parse
     |> Seq.filter (fun testCase -> testCase.Header.Contains "testsuites") // FIXME: temporary disabled
-    |> Seq.map (runTestCase ctx)
+    |> Seq.map (TestCase.run ctx)
     |> Seq.filter id
     |> Seq.length

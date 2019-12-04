@@ -5,7 +5,7 @@ open System.Text
 
 [<RequireQualifiedAccess>]
 type Inst<'T> =
-    | Ldc of Sexp<'T>
+    | Ldc of 'T
     | Ldv of string
     | Ldf of Pattern * Code<'T>
     | Ldm of Pattern * Code<'T>
@@ -20,7 +20,7 @@ type Inst<'T> =
 and Code<'T> =
     { Instructions: Inst<'T> list }
 
-    member self.Next() =
+    member self.Next(): (Inst<'T> * Code<'T>) option =
         match self.Instructions with
         | [] -> None
         | inst :: rest -> Some (inst, { Instructions = rest })

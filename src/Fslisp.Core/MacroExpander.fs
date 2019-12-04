@@ -1,16 +1,16 @@
 namespace Fslisp.Core
 
 type MacroExpander(env: Env<Value>) =
-    member self.Expand recurse expr =
+    member self.Expand (recurse: bool) (expr: Value): Value =
         match expr with
         | Sexp.List (m :: args) ->
             match env.Refer m with
-            | Some (Sexp.Pure (Syntax syntax)) ->
+            | Some (Sexp.Pure (Native.Syntax syntax)) ->
                 if recurse then
                     Sexp.List (m :: syntax.MacroExpand self args)
                 else
                     expr
-            | Some (Sexp.Pure (Macro (menv, mpat, mcode))) ->
+            | Some (Sexp.Pure (Native.Macro (menv, mpat, mcode))) ->
                 let env = Env(Some menv)
                 match Pattern.bind mpat args with
                 | Ok mapping ->
@@ -24,7 +24,7 @@ type MacroExpander(env: Env<Value>) =
         | _ ->
             if recurse then self.ExpandChildren expr else expr
 
-    member self.ExpandChildren expr =
+    member self.ExpandChildren (expr: Value): Value =
         match expr with
         | Sexp.Cons (a, b) ->
             Sexp.Cons (self.Expand true a, self.ExpandChildren b)
@@ -34,5 +34,5 @@ type MacroExpander(env: Env<Value>) =
     interface IMacroExpander with
         member self.Expand recurse expr = self.Expand recurse expr
 
-    static member MacroExpand env recurse expr =
+    static member MacroExpand (env: Env<Value>) (recurse: bool) (expr: Value): Value =
         MacroExpander(env).Expand recurse expr
