@@ -50,7 +50,14 @@ module Command =
         | EvalFailure input ->
             parse input >> ctx.Eval |> failure
         | EvalAll input ->
-            ()
+            match Parser.parseToEnd Parser.program "test" input with
+            | Ok program ->
+                for expr in program do
+                    match ctx.Eval expr with
+                    | Ok _ -> ()
+                    | Error e -> raise (CommandFailedException e)
+            | Error e ->
+                raise (CommandFailedException e)
 
 type TestCase =
     { Header: string; Command: Command }

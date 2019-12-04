@@ -1,6 +1,6 @@
 namespace Fslisp.Core
 
-type Context() =
+type Context(builtinTable: BuiltinTable) =
     let topLevel = Env(None)
     do Syntax.install topLevel
 
@@ -21,12 +21,12 @@ type Context() =
 
     member _.MacroExpand (recurse: bool) (expr: Value): Result<Value, string> =
         Context.Wrap (fun () ->
-            MacroExpander.MacroExpand topLevel recurse expr
+            MacroExpander.MacroExpand builtinTable topLevel recurse expr
         )
 
     member _.Eval (expr: Value): Result<Value, string> =
         Context.Wrap (fun () ->
-            let expr = MacroExpander.MacroExpand topLevel true expr
+            let expr = MacroExpander.MacroExpand builtinTable topLevel true expr
             let code = Compiler.Compile topLevel expr
-            VM.Execute topLevel code
+            VM.Execute builtinTable topLevel code
         )

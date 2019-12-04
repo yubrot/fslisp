@@ -2,7 +2,7 @@ namespace Fslisp.Core
 
 open System.Collections.Generic
 
-type Compiler(env: Env<Value>) =
+type Compiler(compilerEnv: Env<Value>) =
     let code = List<Inst<Value>>()
 
     member _.Complete(): Code<Value> =
@@ -16,7 +16,7 @@ type Compiler(env: Env<Value>) =
         | Sexp.Sym sym ->
             code.Add (Inst.Ldv sym)
         | Sexp.List (f :: args) ->
-            match env.Refer f with
+            match compilerEnv.Refer f with
             | Some (Sexp.Pure (Native.Syntax syntax)) ->
                 syntax.Compile self args
             | _ ->
@@ -33,8 +33,8 @@ type Compiler(env: Env<Value>) =
 
         member self.Eval s = self.Eval s
 
-        member self.Block f =
-            let compiler = Compiler(env)
+        member _.Block f =
+            let compiler = Compiler(compilerEnv)
             f compiler
             compiler.Complete()
 

@@ -3,7 +3,7 @@ open Fslisp.Core
 
 [<EntryPoint>]
 let main argv =
-    let ctx = Context()
+    let ctx = Context(Map.empty)
     match argv with
     | [| "-test"; test |] ->
         use fs = File.OpenRead(test)

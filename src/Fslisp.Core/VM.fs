@@ -1,13 +1,11 @@
 namespace Fslisp.Core
 
-exception EvaluationErrorException of string
+type BuiltinTable = Map<string, IBuiltin>
 
-exception InternalErrorException of string
-
-type VM(env: Env<Value>, code: Code<Value>) =
+type VM(builtinTable: BuiltinTable, env: Env<Value>, code: Code<Value>) =
     let mutable stack = []
-    let mutable code = code
     let mutable env = env
+    let mutable code = code
     let mutable dump = []
 
     member _.Push (value: Value) =
@@ -39,6 +37,8 @@ type VM(env: Env<Value>, code: Code<Value>) =
 
     member self.Apply (f: Value) (args: Value list) =
         match f with
+        | Sexp.Pure (Native.Builtin builtin) ->
+            builtin.Run self args
         | Sexp.Pure (Native.Fun (fenv, fpat, fcode)) ->
             let env = Env(Some fenv)
             match Pattern.bind fpat args with
@@ -49,6 +49,24 @@ type VM(env: Env<Value>, code: Code<Value>) =
                 raise (InternalErrorException ("This function " + e))
         | _ ->
             raise (EvaluationErrorException "Cannot call: ")
+
+    member self.ApplyNever (f: Value) (args: Value list) =
+        stack <- []
+        code <- { Instructions = [Inst.Leave] }
+        dump <- []
+        self.Apply f args
+
+    member _.ApplyCont (cont: Cont) =
+        stack <- cont.Stack
+        env <- cont.Env
+        code <- cont.Code
+        dump <- cont.Dump
+
+    member _.CaptureCont(): Cont =
+        { Stack = stack
+          Env = env
+          Code = code
+          Dump = dump }
 
     member self.RunInst (inst: Inst<Value>) =
         match inst with
@@ -61,7 +79,11 @@ type VM(env: Env<Value>, code: Code<Value>) =
         | Inst.Ldm (pattern, code) ->
             self.Push (Sexp.Pure (Native.Macro (env, pattern, code)))
         | Inst.Ldb name ->
-            raise (System.NotImplementedException "ldb")
+            match Map.tryFind name builtinTable with
+            | Some builtin ->
+                self.Push (Sexp.Pure (Native.Builtin builtin))
+            | None ->
+                raise (EvaluationErrorException ("Unsupported builtin: " + name))
         | Inst.Sel (a, b) ->
             let branch = if self.Pop() |> Sexp.test then a else b
             self.Enter (Env(Some env)) branch
@@ -90,5 +112,12 @@ type VM(env: Env<Value>, code: Code<Value>) =
         | None ->
             self.Pop()
 
-    static member Execute (env: Env<Value>) (code: Code<Value>): Value =
-        VM(env, code).Run()
+    interface IVM with
+        member self.Push value = self.Push value
+        member self.Apply f args = self.Apply f args
+        member self.ApplyNever f args = self.ApplyNever f args
+        member self.ApplyCont cont = self.ApplyCont cont
+        member self.CaptureCont() = self.CaptureCont()
+
+    static member Execute (builtinTable: BuiltinTable) (env: Env<Value>) (code: Code<Value>): Value =
+        VM(builtinTable, env, code).Run()
