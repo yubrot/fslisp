@@ -10,9 +10,9 @@
   <ItemGroup>
     <Compile Include="SexpTest.fs" />
     <Compile Include="PatternTest.fs" />
-    <Compile Include="SignatureTest.fs" />
     <Compile Include="ParserTest.fs" />
     <Compile Include="EnvTest.fs" />
+    <Compile Include="SignatureTest.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

@@ -14,6 +14,7 @@ type Native =
     | Syntax of ISyntax
     | Fun of Env<Value> * Pattern * Code<Value>
     | Macro of Env<Value> * Pattern * Code<Value>
+    | Vec of Value[]
 
     override self.ToString() =
         match self with
@@ -21,6 +22,7 @@ type Native =
         | Syntax _ -> "<syntax>"
         | Fun _ -> "<fun>"
         | Macro _ -> "<macro>"
+        | Vec a -> (Sexp.List (Sexp.Sym "vec" :: List.ofArray a)).ToString()
 
 and Value = Sexp<Native>
 

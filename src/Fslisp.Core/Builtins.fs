@@ -97,7 +97,7 @@ let table: BuiltinTable = Map.ofList [
     "proc?", builtinTest "proc?" (function Sexp.Pure (Native.Builtin _ | Native.Fun _) -> true | _ -> false)
     "meta?", builtinTest "proc?" (function Sexp.Pure (Native.Syntax _ | Native.Macro _) -> true | _ -> false)
     "port?", builtinTest "proc?" (fun _ -> false)
-    "vec?", builtinTest "vec?" (fun _ -> false)
+    "vec?", builtinTest "vec?" (function Sexp.Pure (Native.Vec _) -> true | _ -> false)
 
     "+", builtin [
         ("+", Rest (Num "nums")) ->>
@@ -201,5 +201,48 @@ let table: BuiltinTable = Map.ofList [
                     | true, num -> Sexp.Num num
                     | false, _ -> Sexp.Nil
                 vm.Push num
+    ]
+
+    "vec", builtin [
+        ("vec", Rest "items") ->>
+            fun vm (_, items) -> vm.Push (Sexp.Pure (Native.Vec (List.toArray items)))
+    ]
+    "vec-make", builtin [
+        ("vec-make", Num "length", "init", ()) ->>
+            fun vm (_, length, init, ()) ->
+                let a = Array.create (int length) init
+                vm.Push (Sexp.Pure (Native.Vec a))
+    ]
+    "vec-ref", builtin [
+        ("vec-ref", Vec "vec", Num "index", ()) ->>
+            fun vm (_, vec, index, ()) ->
+                let s =
+                    try vec.[int index]
+                    with :? System.IndexOutOfRangeException -> Sexp.Nil
+                vm.Push s
+    ]
+    "vec-length", builtin [
+        ("vec-length", Vec "vec", ()) ->>
+            fun vm (_, vec, ()) -> vm.Push (Sexp.Num (float vec.Length))
+    ]
+    "vec-set!", builtin [
+        ("vec-set!", Vec "vec", Num "index", "item", ()) ->>
+            fun vm (_, vec, index, item, ()) ->
+                try
+                    vec.[int index] <- item
+                with
+                | :? System.IndexOutOfRangeException ->
+                    raise (EvaluationErrorException "Index out of range")
+                vm.Push Sexp.Nil
+    ]
+    "vec-copy!", builtin [
+        ("vec-set!", Vec "dest", Num "dest-start", (Vec "src", Num "src-start", Num "length", ())) ->>
+            fun vm (_, dest, destStart, (src, srcStart, length, ())) ->
+                try
+                    System.Array.Copy(src, int srcStart, dest, int destStart, int length)
+                with
+                | :? System.ArgumentException ->
+                    raise (EvaluationErrorException "Index out of range")
+                vm.Push Sexp.Nil
     ]
 ]

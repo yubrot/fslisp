@@ -83,6 +83,14 @@ type List< ^a> = List of ^a with
     static member inline Instance(Placeholder, List a) =
         Sexp.List [placeholder a; Sexp.Sym "..."]
 
+type Vec = Vec of string with
+    static member inline Instance(Match, Vec _) =
+        function
+        | Sexp.Pure (Native.Vec a) -> a
+        | _ -> raise (MatchFailedException TypeMismatch)
+    static member inline Instance(Placeholder, Vec label) =
+        Sexp.Sym label
+
 type Pat = Pat of string with
     static member inline Instance(Match, Pat _) =
         fun x ->
