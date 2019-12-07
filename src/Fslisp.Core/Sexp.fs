@@ -97,3 +97,13 @@ module Sexp =
 
     let (|UnquoteSplicing|_|) s =
         match s with List [Sexp.Sym "unquote-splicing"; s] -> Some s | _ -> None
+
+    let rec equal a b =
+        match a, b with
+        | Sexp.Num a, Sexp.Num b -> a = b
+        | Sexp.Sym a, Sexp.Sym b -> a = b
+        | Sexp.Str a, Sexp.Str b -> a = b
+        | Sexp.Cons (a, a2), Sexp.Cons (b, b2) -> equal a b && equal a2 b2
+        | Sexp.Nil, Sexp.Nil -> true
+        | Sexp.Bool a, Sexp.Bool b -> a = b
+        | _, _ -> false

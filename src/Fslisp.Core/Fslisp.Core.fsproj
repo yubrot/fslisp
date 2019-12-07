@@ -19,6 +19,7 @@
     <Compile Include="Syntax.fs" />
     <Compile Include="Context.fs" />
     <Compile Include="TestRunner.fs" />
+    <Compile Include="Builtins.fs" />
   </ItemGroup>
 
   <ItemGroup>

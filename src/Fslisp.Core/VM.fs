@@ -38,7 +38,7 @@ type VM(builtinTable: BuiltinTable, env: Env<Value>, code: Code<Value>) =
     member self.Apply (f: Value) (args: Value list) =
         match f with
         | Sexp.Pure (Native.Builtin builtin) ->
-            builtin.Run self args
+            builtin.Run self (f :: args)
         | Sexp.Pure (Native.Fun (fenv, fpat, fcode)) ->
             let env = Env(Some fenv)
             match Pattern.bind fpat args with
