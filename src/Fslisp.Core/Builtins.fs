@@ -146,4 +146,60 @@ let table: BuiltinTable = Map.ofList [
         ("never", "f", Rest "args") ->>
             fun vm (_, f, args) -> vm.ApplyNever f args
     ]
+
+    "str", builtin [
+        ("str", Rest (Num "bytes")) ->>
+            fun vm (_, bytes) ->
+                let str =
+                    bytes
+                    |> Seq.map (fun i ->
+                        if i < 0.0 || 256.0 <= i then
+                            raise (EvaluationErrorException "Each byte of string must be inside the range 0-255")
+                        else
+                            byte i
+                    )
+                    |> Array.ofSeq
+                vm.Push (Sexp.Str str)
+    ]
+    "str-ref", builtin [
+        ("str-ref", Str "string", Num "index", ()) ->>
+            fun vm (_, str, index, ()) ->
+                let s =
+                    try Sexp.Num (float str.[int index])
+                    with :? System.IndexOutOfRangeException -> Sexp.Nil
+                vm.Push s
+    ]
+    "str-bytesize", builtin [
+        ("str-bytesize", Str "string", ()) ->>
+            fun vm (_, str, ()) -> vm.Push (Sexp.Num (float str.Length))
+    ]
+    "str-concat", builtin [
+        ("str-concat", Rest (Str "strs")) ->>
+            fun vm (_, strs) -> vm.Push (Sexp.Str (Array.concat strs))
+    ]
+    "substr", builtin [
+        ("substr", Str "str", Num "index", Num "bytesize", ()) ->>
+            fun vm (_, str, index, bytesize, ()) ->
+                let substr =
+                    try str.[int index .. int index + int bytesize - 1]
+                    with :? System.IndexOutOfRangeException -> raise (EvaluationErrorException "Index out of range")
+                vm.Push (Sexp.Str substr)
+    ]
+    "sym->str", builtin [
+        ("sym->str", Sym "symbol", ()) ->>
+            fun vm (_, sym, ()) -> vm.Push (Sexp.Str (Encoding.UTF8.GetBytes sym))
+    ]
+    "num->str", builtin [
+        ("num->str", Num "number", ()) ->>
+            fun vm (_, num, ()) -> vm.Push (Sexp.Str (Encoding.UTF8.GetBytes (num.ToString())))
+    ]
+    "str->num", builtin [
+        ("str->num", Str "string", ()) ->>
+            fun vm (_, str, ()) ->
+                let num =
+                    match System.Double.TryParse (Encoding.UTF8.GetString str) with
+                    | true, num -> Sexp.Num num
+                    | false, _ -> Sexp.Nil
+                vm.Push num
+    ]
 ]
