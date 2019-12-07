@@ -7,7 +7,7 @@ type MacroExpander(builtinTable: BuiltinTable, macroExpanderEnv: Env<Value>) =
             match macroExpanderEnv.Refer m with
             | Some (Sexp.Pure (Native.Syntax syntax)) ->
                 if recurse then
-                    Sexp.List (m :: syntax.MacroExpand self args)
+                    Sexp.List (syntax.MacroExpand self (m :: args))
                 else
                     expr
             | Some (Sexp.Pure (Native.Macro (menv, mpat, mcode))) ->

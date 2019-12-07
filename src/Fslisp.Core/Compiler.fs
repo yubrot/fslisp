@@ -18,7 +18,7 @@ type Compiler(compilerEnv: Env<Value>) =
         | Sexp.List (f :: args) ->
             match compilerEnv.Refer f with
             | Some (Sexp.Pure (Native.Syntax syntax)) ->
-                syntax.Compile self args
+                syntax.Compile self (f :: args)
             | _ ->
                 self.Eval f
                 args |> List.iter self.Eval

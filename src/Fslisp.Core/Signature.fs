@@ -146,3 +146,28 @@ type Rest< ^a> = Rest of ^a with
         List.map (match' a)
     static member inline Instance(Placeholder, Rest a) =
         [placeholder a; Sexp.Sym "..."]
+
+let inline (->>) m body ctx x =
+    Result.map (body ctx) (tryMatch m x)
+
+let handle arms ctx x =
+    let rec go arms errors =
+        match arms with
+        | arm :: arms ->
+            match arm ctx x with
+            | Ok a -> Ok a
+            | Error e -> go arms (e :: errors)
+        | [] ->
+            let expect =
+                errors
+                |> Seq.map (fun (s, _) -> (Sexp.List s).ToString())
+                |> String.concat " or "
+            let reason =
+                errors
+                |> Seq.map (fun (_, e) -> e)
+                |> Seq.sortDescending
+                |> Seq.tryHead
+                |> Option.map (fun e -> ": " + e.ToString())
+                |> Option.defaultValue ""
+            Error ("expected " + expect + reason)
+    go arms []

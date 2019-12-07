@@ -1,15 +1,7 @@
 [<RequireQualifiedAccess>]
 module Fslisp.Core.Syntax
 
-type IMacroExpander with
-    member self.ExpandArgs (bs: bool list) (ss: Value list): Value list =
-        match bs, ss with
-        | true :: bs, s :: ss ->
-            self.Expand true s :: self.ExpandArgs bs ss
-        | false :: bs, s :: ss ->
-            s :: self.ExpandArgs bs ss
-        | _, rest ->
-            rest |> List.map (self.Expand true)
+open Signature
 
 type ICompiler with
     member self.Def (sym: string) (x: Value) =
@@ -53,89 +45,56 @@ type ICompiler with
     member self.Quote (expr: Value) =
         self.Do (Inst.Ldc expr)
 
-type Def() =
-    interface ISyntax with
-        member _.MacroExpand expander args =
-            expander.ExpandArgs [false; true] args
-        member _.Compile compiler args =
-            match args with
-            | [Sexp.Sym sym; x] -> compiler.Def sym x
-            | _ -> raise (SyntaxErrorException "expected (def sym x)")
-
-type Set() =
-    interface ISyntax with
-        member _.MacroExpand expander args =
-            expander.ExpandArgs [false; true] args
-        member _.Compile compiler args =
-            match args with
-            | [Sexp.Sym sym; x] -> compiler.Set sym x
-            | _ -> raise (SyntaxErrorException "expected (set sym x)")
-
-type Begin() =
-    interface ISyntax with
-        member _.MacroExpand expander args =
-            expander.ExpandArgs [] args
-        member _.Compile compiler args =
-            compiler.Begin args
-
-type If() =
-    interface ISyntax with
-        member _.MacroExpand expander args =
-            expander.ExpandArgs [true; true; true] args
-        member _.Compile compiler args =
-            match args with
-            | [c; t; e] -> compiler.If c t e
-            | _ -> raise (SyntaxErrorException "expected (if cond then else)")
-
-type Fun() =
-    interface ISyntax with
-        member _.MacroExpand expander args =
-            expander.ExpandArgs [false; true] args
-        member _.Compile compiler args =
-            match args with
-            | pattern :: body ->
-                match Pattern.build pattern with
-                | Ok pattern -> compiler.Fun pattern body
-                | Error e -> raise (SyntaxErrorException ("invalid pattern " + e.ToString()))
-            | _ -> raise (SyntaxErrorException "expected (fun pattern body...)")
-
-type Macro() =
-    interface ISyntax with
-        member _.MacroExpand expander args =
-            expander.ExpandArgs [false; true] args
-        member _.Compile compiler args =
-            match args with
-            | pattern :: body ->
-                match Pattern.build pattern with
-                | Ok pattern -> compiler.Macro pattern body
-                | Error e -> raise (SyntaxErrorException ("invalid pattern " + e.ToString()))
-            | _ -> raise (SyntaxErrorException "expected (macro pattern body...)")
-
-type Builtin() =
-    interface ISyntax with
-        member _.MacroExpand expander args =
-            expander.ExpandArgs [false] args
-        member _.Compile compiler args =
-            match args with
-            | [Sexp.Sym sym] -> compiler.Builtin sym
-            | _ -> raise (SyntaxErrorException "expected (builtin sym)")
-
-type Quote() =
-    interface ISyntax with
-        member _.MacroExpand expander args =
-            expander.ExpandArgs [false] args
-        member _.Compile compiler args =
-            match args with
-            | [s] -> compiler.Quote s
-            | _ -> raise (SyntaxErrorException "expected (quote expr)")
+let inline syntax signature arms =
+    { new ISyntax with
+        member _.MacroExpand expander expr =
+            let rec go bs ss =
+                match bs, ss with
+                | true :: bs, s :: ss -> expander.Expand true s :: go bs ss
+                | false :: bs, s :: ss -> s :: go bs ss
+                | _, rest -> rest |> List.map (expander.Expand true)
+            go signature expr
+        member _.Compile compiler expr =
+            match handle arms compiler expr with
+            | Ok () -> ()
+            | Error e -> raise (SyntaxErrorException e)
+    }
 
 let install (env: Env<Value>) =
-    let bind sym syntax = env.Define sym (Sexp.Pure (Native.Syntax (syntax())))
-    bind "def" Def
-    bind "set!" Set
-    bind "begin" Begin
-    bind "if" If
-    bind "fun" Fun
-    bind "macro" Macro
-    bind "builtin" Builtin
-    bind "quote" Quote
+    [
+        "def", syntax [false; false; true] [
+            ("def", Sym "sym", "x", ()) ->>
+                fun compiler (_, sym, x, ()) -> compiler.Def sym x
+        ]
+        "set!", syntax [false; false; true] [
+            ("set!", Sym "sym", "x", ()) ->>
+                fun compiler (_, sym, x, ()) -> compiler.Set sym x
+        ]
+        "begin", syntax [false] [
+            ("begin", Rest "body") ->>
+                fun compiler (_, body) -> compiler.Begin body
+        ]
+        "if", syntax [false; true; true; true] [
+            ("if", "cond", "then", "else", ()) ->>
+                fun compiler (_, c, t, e, ()) -> compiler.If c t e
+        ]
+        "fun", syntax [false; false] [
+            ("fun", Pat "pattern", Rest "body") ->>
+                fun compiler (_, pattern, body) -> compiler.Fun pattern body
+        ]
+        "macro", syntax [false; false] [
+            ("macro", Pat "pattern", Rest "body") ->>
+                fun compiler (_, pattern, body) -> compiler.Macro pattern body
+        ]
+        "builtin", syntax [false; false] [
+            ("builtin", Sym "sym", ()) ->>
+                fun compiler (_, sym, ()) -> compiler.Builtin sym
+        ]
+        "quote", syntax [false; false] [
+            ("quote", "expr", ()) ->>
+                fun compiler (_, expr, ()) -> compiler.Quote expr
+        ]
+    ]
+    |> List.iter (fun (sym, syntax) ->
+        env.Define sym (Sexp.Pure (Native.Syntax syntax))
+    )
