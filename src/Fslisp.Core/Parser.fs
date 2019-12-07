@@ -1,5 +1,6 @@
 module Fslisp.Core.Parser
 
+open System.Text
 open FParsec
 
 [<RequireQualifiedAccess>]
@@ -58,7 +59,7 @@ module private Grammar =
         Token.Unquote >>. S |>> Sexp.Unquote
         Token.Num |>> Sexp.Num
         Token.Sym |>> Sexp.Sym
-        Token.Str |>> Sexp.Str
+        Token.Str |>> (Encoding.UTF8.GetBytes >> Sexp.Str)
         Token.True >>% Sexp.Bool true
         Token.False >>% Sexp.Bool false
     ]

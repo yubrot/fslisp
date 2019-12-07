@@ -1,5 +1,6 @@
 module Fslisp.Core.Builtins
 
+open System.Text
 open Signature
 
 let builtin arms =
@@ -68,7 +69,7 @@ let table: BuiltinTable = Map.ofList [
         ("error", ()) ->>
             fun vm (_, ()) -> raise (EvaluationErrorException "error called")
         ("error", Str "msg", ()) ->>
-            fun vm (_, msg, ()) -> raise (EvaluationErrorException msg)
+            fun vm (_, msg, ()) -> raise (EvaluationErrorException (Encoding.UTF8.GetString msg))
     ]
 
     "gensym", builtinGensym "gensym"

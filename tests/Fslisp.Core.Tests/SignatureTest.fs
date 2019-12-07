@@ -1,6 +1,7 @@
 module Fslisp.Core.Tests.Signature
 
 open Xunit
+open System.Text
 open Fslisp.Core
 open Signature
 
@@ -19,7 +20,8 @@ let symSignatureTest() =
 [<Fact>]
 let strSignatureTest() =
     let p = Str "body"
-    Assert.Equal(Ok "foo", tryMatch p (Sexp.Str "foo"))
+    let str = Encoding.UTF8.GetBytes "foo"
+    Assert.Equal(Ok str, tryMatch p (Sexp.Str str))
     Assert.Equal(Error (Sexp.Sym "body", TypeMismatch), tryMatch p (Sexp.Num 123.0))
 
 [<Fact>]
@@ -90,20 +92,21 @@ let tupleSignatureTest() =
         Error ([Sexp.Sym "a"; Sexp.Sym "b"], ArityMismatch),
         tryMatch (Sym "a", Sym "b", ()) [Sexp.Sym "test"]
     )
+    let text = Encoding.UTF8.GetBytes "test"
     Assert.Equal(
-        Ok (1.0, "foo", "text", true, ()),
-        tryMatch (Num "a", Sym "b", Str "c", Bool "d", ()) [Sexp.Num 1.0; Sexp.Sym "foo"; Sexp.Str "text"; Sexp.Bool true]
+        Ok (1.0, "foo", text, true, ()),
+        tryMatch (Num "a", Sym "b", Str "c", Bool "d", ()) [Sexp.Num 1.0; Sexp.Sym "foo"; Sexp.Str text; Sexp.Bool true]
     )
 
 [<Fact>]
 let placeholderSignatureTest() =
     Assert.Equal(
-        Ok (Sexp.Sym "left", Sexp.Str "right", ()),
-        tryMatch ("one", "two", ()) [Sexp.Sym "left"; Sexp.Str "right"]
+        Ok (Sexp.Sym "f", Sexp.Bool true, ()),
+        tryMatch ("one", "two", ()) [Sexp.Sym "f"; Sexp.Bool true]
     )
 
 [<Fact>]
-let seqSignatureTest() =
+let restSignatureTest() =
     Assert.Equal(
         Ok (Sexp.Num 1.0, []),
         tryMatch ("head", Rest "tail") [Sexp.Num 1.0]
