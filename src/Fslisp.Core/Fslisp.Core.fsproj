@@ -7,9 +7,10 @@
 
   <ItemGroup>
     <Compile Include="Sexp.fs" />
+    <Compile Include="Pattern.fs" />
+    <Compile Include="Signature.fs" />
     <Compile Include="Parser.fs" />
     <Compile Include="Env.fs" />
-    <Compile Include="Pattern.fs" />
     <Compile Include="Code.fs" />
     <Compile Include="Value.fs" />
     <Compile Include="VM.fs" />
