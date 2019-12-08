@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="ByteStringTest.fs" />
     <Compile Include="SexpTest.fs" />
     <Compile Include="PatternTest.fs" />
     <Compile Include="ParserTest.fs" />

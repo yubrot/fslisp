@@ -1,11 +1,10 @@
 module Fslisp.Core.Tests.Sexp
 
 open Xunit
-open System.Text
 open Fslisp.Core
 
 [<Fact>]
-let sexpTest() =
+let sexpTestTest() =
     Assert.True(Sexp.test (Sexp.Num 123.0))
     Assert.True(Sexp.test Sexp.Nil)
     Assert.True(Sexp.test (Sexp.Bool true))
@@ -84,7 +83,7 @@ let sexpToString() =
     Assert.Equal("foo", (Sexp.Sym "foo").ToString())
     Assert.Equal(
         "\"Hello\\nWorld\"",
-        (Sexp.Str (Encoding.UTF8.GetBytes "Hello\nWorld")).ToString()
+        (Sexp.Str (ByteString.encode "Hello\nWorld")).ToString()
     )
     Assert.Equal(
         "(#t . #f)",

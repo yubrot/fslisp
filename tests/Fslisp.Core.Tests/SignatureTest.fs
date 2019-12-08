@@ -1,7 +1,6 @@
 module Fslisp.Core.Tests.Signature
 
 open Xunit
-open System.Text
 open Fslisp.Core
 open Signature
 
@@ -20,7 +19,7 @@ let symSignatureTest() =
 [<Fact>]
 let strSignatureTest() =
     let p = Str "body"
-    let str = Encoding.UTF8.GetBytes "foo"
+    let str = ByteString.encode "foo"
     Assert.Equal(Ok str, tryMatch p (Sexp.Str str))
     Assert.Equal(Error (Sexp.Sym "body", TypeMismatch), tryMatch p (Sexp.Num 123.0))
 
@@ -92,7 +91,7 @@ let tupleSignatureTest() =
         Error ([Sexp.Sym "a"; Sexp.Sym "b"], ArityMismatch),
         tryMatch (Sym "a", Sym "b", ()) [Sexp.Sym "test"]
     )
-    let text = Encoding.UTF8.GetBytes "test"
+    let text = ByteString.encode "test"
     Assert.Equal(
         Ok (1.0, "foo", text, true, ()),
         tryMatch (Num "a", Sym "b", Str "c", Bool "d", ()) [Sexp.Num 1.0; Sexp.Sym "foo"; Sexp.Str text; Sexp.Bool true]

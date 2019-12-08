@@ -1,7 +1,6 @@
 module Fslisp.Core.Tests.Parser
 
 open Xunit
-open System.Text
 open Fslisp.Core
 open Parser
 
@@ -43,11 +42,11 @@ let parseAtomTest() =
         parseToEnd sexp "test" "*foo-bar+baz"
     )
     Assert.Equal(
-        Ok (Sexp.Str (Encoding.UTF8.GetBytes "Hello, World!\n")),
+        Ok (Sexp.Str (ByteString.encode "Hello, World!\n")),
         parseToEnd sexp "test" "\"Hello, World!\\n\""
     )
     Assert.Equal(
-        Ok (Sexp.Str (Encoding.UTF8.GetBytes " \" \\ \r \t ")),
+        Ok (Sexp.Str (ByteString.encode " \" \\ \r \t ")),
         parseToEnd sexp "test" "\" \\\" \\\\ \\r \\t \""
     )
     Assert.Equal(
@@ -74,7 +73,7 @@ let parseListTest() =
         parseToEnd sexp "test" "(#t #f . #t)"
     )
     Assert.Equal(
-        Ok (Sexp.List [Sexp.Num 1.0; Sexp.List [Sexp.Sym "b"; Sexp.List [Sexp.Str (Encoding.UTF8.GetBytes "c")]]]),
+        Ok (Sexp.List [Sexp.Num 1.0; Sexp.List [Sexp.Sym "b"; Sexp.List [Sexp.Str (ByteString.encode "c")]]]),
         parseToEnd sexp "test" "[1 (b [\"c\"])]"
     )
     Assert.Equal(
@@ -93,7 +92,7 @@ let parseProgramTest() =
             Sexp.Num 123.0
             Sexp.Nil
             Sexp.Sym "foo"
-            Sexp.Str (Encoding.UTF8.GetBytes "bar")
+            Sexp.Str (ByteString.encode "bar")
         ]),
         parseToEnd program "test" "123 () foo ; test \n \"bar\""
     )
