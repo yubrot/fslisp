@@ -119,7 +119,6 @@ module TestCase =
 let run (ctx: Context) (src: Stream) =
     src
     |> TestCase.parse
-    |> Seq.filter (fun testCase -> testCase.Header.Contains "testsuites") // FIXME: temporary disabled
     |> Seq.map (TestCase.run ctx)
     |> Seq.filter id
     |> Seq.length

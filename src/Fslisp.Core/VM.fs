@@ -1,12 +1,12 @@
 namespace Fslisp.Core
 
-type BuiltinTable = Map<string, IBuiltin>
-
-type VM(builtinTable: BuiltinTable, env: Env<Value>, code: Code<Value>) =
+type VM(context: IContext, env: Env<Value>, code: Code<Value>) =
     let mutable stack = []
     let mutable env = env
     let mutable code = code
     let mutable dump = []
+
+    member _.Context = context
 
     member _.Push (value: Value) =
         stack <- value :: stack
@@ -79,7 +79,7 @@ type VM(builtinTable: BuiltinTable, env: Env<Value>, code: Code<Value>) =
         | Inst.Ldm (pattern, code) ->
             self.Push (Sexp.Pure (Native.Macro (env, pattern, code)))
         | Inst.Ldb name ->
-            match Map.tryFind name builtinTable with
+            match context.Builtins.Get name with
             | Some builtin ->
                 self.Push (Sexp.Pure (Native.Builtin builtin))
             | None ->
@@ -118,6 +118,7 @@ type VM(builtinTable: BuiltinTable, env: Env<Value>, code: Code<Value>) =
         member self.ApplyNever f args = self.ApplyNever f args
         member self.ApplyCont cont = self.ApplyCont cont
         member self.CaptureCont() = self.CaptureCont()
+        member self.Context = self.Context
 
-    static member Execute (builtinTable: BuiltinTable) (env: Env<Value>) (code: Code<Value>): Value =
-        VM(builtinTable, env, code).Run()
+    static member Execute (context: IContext) (env: Env<Value>) (code: Code<Value>): Value =
+        VM(context, env, code).Run()

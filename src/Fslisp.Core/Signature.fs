@@ -91,6 +91,14 @@ type Vec = Vec of string with
     static member inline Instance(Placeholder, Vec label) =
         Sexp.Sym label
 
+type Port = Port of string with
+    static member inline Instance(Match, Port _) =
+        function
+        | Sexp.Pure (Native.Port a) -> a
+        | _ -> raise (MatchFailedException TypeMismatch)
+    static member inline Instance(Placeholder, Port label) =
+        Sexp.Sym label
+
 type Pat = Pat of string with
     static member inline Instance(Match, Pat _) =
         fun x ->

@@ -1,10 +1,10 @@
 namespace Fslisp.Core
 
-type MacroExpander(builtinTable: BuiltinTable, macroExpanderEnv: Env<Value>) =
+type MacroExpander(context: IContext) =
     member self.Expand (recurse: bool) (expr: Value): Value =
         match expr with
         | Sexp.List (m :: args) ->
-            match macroExpanderEnv.Refer m with
+            match context.TopLevel.Refer m with
             | Some (Sexp.Pure (Native.Syntax syntax)) ->
                 if recurse then
                     Sexp.List (syntax.MacroExpand self (m :: args))
@@ -15,7 +15,7 @@ type MacroExpander(builtinTable: BuiltinTable, macroExpanderEnv: Env<Value>) =
                 match Pattern.bind mpat args with
                 | Ok mapping ->
                     Map.iter env.Define mapping
-                    let expr = VM.Execute builtinTable env mcode
+                    let expr = VM.Execute context env mcode
                     if recurse then self.Expand true expr else expr
                 | Error e ->
                     raise (EvaluationErrorException ("This macro " + e))
@@ -34,5 +34,5 @@ type MacroExpander(builtinTable: BuiltinTable, macroExpanderEnv: Env<Value>) =
     interface IMacroExpander with
         member self.Expand recurse expr = self.Expand recurse expr
 
-    static member MacroExpand (builtinTable: BuiltinTable) (macroExpanderEnv: Env<Value>) (recurse: bool) (expr: Value): Value =
-        MacroExpander(builtinTable, macroExpanderEnv).Expand recurse expr
+    static member MacroExpand (context: IContext) (recurse: bool) (expr: Value): Value =
+        MacroExpander(context).Expand recurse expr

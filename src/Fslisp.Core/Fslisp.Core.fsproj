@@ -16,10 +16,11 @@
     <Compile Include="VM.fs" />
     <Compile Include="MacroExpander.fs" />
     <Compile Include="Compiler.fs" />
+    <Compile Include="BuiltinRegistry.fs" />
     <Compile Include="Syntax.fs" />
     <Compile Include="Context.fs" />
     <Compile Include="TestRunner.fs" />
-    <Compile Include="Builtins.fs" />
+    <Compile Include="Std.fs" />
   </ItemGroup>
 
   <ItemGroup>

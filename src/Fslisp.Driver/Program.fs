@@ -3,7 +3,9 @@ open Fslisp.Core
 
 [<EntryPoint>]
 let main argv =
-    let ctx = Context(Builtins.table)
+    let builtins = BuiltinRegistry()
+    Std.install [] builtins
+    let ctx = Context(builtins)
     match argv with
     | [| "-test"; test |] ->
         use fs = File.OpenRead(test)

@@ -14,6 +14,7 @@ type Native =
     | Syntax of ISyntax
     | Fun of Env<Value> * Pattern * Code<Value>
     | Macro of Env<Value> * Pattern * Code<Value>
+    | Port of System.IO.Stream
     | Vec of Value[]
 
     override self.ToString() =
@@ -22,6 +23,7 @@ type Native =
         | Syntax _ -> "<syntax>"
         | Fun _ -> "<fun>"
         | Macro _ -> "<macro>"
+        | Port _ -> "<port>"
         | Vec a -> (Sexp.List (Sexp.Sym "vec" :: List.ofArray a)).ToString()
 
 and Value = Sexp<Native>
@@ -39,6 +41,7 @@ and IVM =
     abstract ApplyNever : Value  -> Value list -> unit
     abstract ApplyCont : Cont -> unit
     abstract CaptureCont : unit -> Cont
+    abstract Context : IContext
 
 and Cont =
     { Stack: Value list
@@ -53,3 +56,34 @@ and ICompiler =
     abstract Do : Inst<Value> -> unit
     abstract Eval : Value -> unit
     abstract Block : (ICompiler -> unit) -> Code<Value>
+
+and IContext =
+    abstract TopLevel : Env<Value>
+    abstract Builtins : IBuiltinRegistry
+
+and IBuiltinRegistry =
+    abstract Get : string -> IBuiltin option
+
+[<RequireQualifiedAccess>]
+module Native =
+    let isProc n =
+        match n with
+        | Native.Builtin _
+        | Native.Fun _ -> true
+        | _ -> false
+
+    let isMeta n =
+        match n with
+        | Native.Syntax _
+        | Native.Macro _ -> true
+        | _ -> false
+
+    let isPort n =
+        match n with
+        | Native.Port _ -> true
+        | _ -> false
+
+    let isVec n =
+        match n with
+        | Native.Vec _ -> true
+        | _ -> false

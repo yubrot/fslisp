@@ -109,3 +109,38 @@ module Sexp =
         | Sexp.Nil, Sexp.Nil -> true
         | Sexp.Bool a, Sexp.Bool b -> a = b
         | _, _ -> false
+
+    let isNum s =
+        match s with
+        | Sexp.Num _ -> true
+        | _ -> false
+
+    let isSym s =
+        match s with
+        | Sexp.Sym _ -> true
+        | _ -> false
+
+    let isStr s =
+        match s with
+        | Sexp.Str _ -> true
+        | _ -> false
+
+    let isCons s =
+        match s with
+        | Sexp.Cons _ -> true
+        | _ -> false
+
+    let isNil s =
+        match s with
+        | Sexp.Nil _ -> true
+        | _ -> false
+
+    let isBool s =
+        match s with
+        | Sexp.Bool _ -> true
+        | _ -> false
+
+    let isPure f s =
+        match s with
+        | Sexp.Pure p -> f p
+        | _ -> false

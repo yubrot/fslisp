@@ -1,10 +1,16 @@
 namespace Fslisp.Core
 
-type Context(builtinTable: BuiltinTable) =
+type Context(builtinRegistry : IBuiltinRegistry) =
     let topLevel = Env(None)
     do Syntax.install topLevel
 
-    static member private Wrap f =
+    interface IContext with
+        member _.TopLevel = topLevel
+        member _.Builtins = builtinRegistry
+
+[<AutoOpen>]
+module Context =
+    let private wrap f =
         try
             Ok(f())
         with
@@ -14,19 +20,20 @@ type Context(builtinTable: BuiltinTable) =
         | InternalErrorException e -> Error ("Internal error: " + e)
         | UndefinedVariableException s -> Error ("Undefined variable: " + s)
 
-    member _.Compile (expr: Value): Result<Code<Value>, string> =
-        Context.Wrap (fun () ->
-            Compiler.Compile topLevel expr
-        )
+    type IContext with
+        member self.Compile (expr: Value): Result<Code<Value>, string> =
+            wrap (fun () ->
+                Compiler.Compile self.TopLevel expr
+            )
 
-    member _.MacroExpand (recurse: bool) (expr: Value): Result<Value, string> =
-        Context.Wrap (fun () ->
-            MacroExpander.MacroExpand builtinTable topLevel recurse expr
-        )
+        member self.MacroExpand (recurse: bool) (expr: Value): Result<Value, string> =
+            wrap (fun () ->
+                MacroExpander.MacroExpand self recurse expr
+            )
 
-    member _.Eval (expr: Value): Result<Value, string> =
-        Context.Wrap (fun () ->
-            let expr = MacroExpander.MacroExpand builtinTable topLevel true expr
-            let code = Compiler.Compile topLevel expr
-            VM.Execute builtinTable topLevel code
-        )
+        member self.Eval (expr: Value): Result<Value, string> =
+            wrap (fun () ->
+                let expr = MacroExpander.MacroExpand self true expr
+                let code = Compiler.Compile self.TopLevel expr
+                VM.Execute self self.TopLevel code
+            )
