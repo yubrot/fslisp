@@ -12,8 +12,8 @@ exception CompileErrorException of string
 type Native =
     | Builtin of IBuiltin
     | Syntax of ISyntax
-    | Fun of Env<Value> * Pattern * Code<Value>
-    | Macro of Env<Value> * Pattern * Code<Value>
+    | Fun of Closure
+    | Macro of Closure
     | Port of System.IO.Stream
     | Vec of Value[]
 
@@ -28,6 +28,11 @@ type Native =
 
 and Value = Sexp<Native>
 
+and Closure =
+    { Env: Env<Value>
+      Pattern: Pattern
+      Body: Code<Value> }
+
 and IBuiltin =
     abstract Run : IVM -> Value list -> unit
 
@@ -37,8 +42,8 @@ and ISyntax =
 
 and IVM =
     abstract Push : Value -> unit
-    abstract Apply : Value -> Value list -> unit
-    abstract ApplyNever : Value  -> Value list -> unit
+    abstract Apply : Value * Value list -> unit
+    abstract ApplyNever : Value * Value list -> unit
     abstract ApplyCont : Cont -> unit
     abstract CaptureCont : unit -> Cont
     abstract Context : IContext

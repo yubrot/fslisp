@@ -105,7 +105,7 @@ let install (args: string list) (registry: BuiltinRegistry) =
 
     register builtin "apply" [
         ("apply", "f", List "argument-list", ()) ->>
-            fun vm (_, f, args, ()) -> vm.Apply f args
+            fun vm (_, f, args, ()) -> vm.Apply(f, args)
     ]
 
     register builtinTest "num?" ("num?", Sexp.isNum)
@@ -160,11 +160,11 @@ let install (args: string list) (registry: BuiltinRegistry) =
         ("call/cc", "f", ()) ->>
             fun vm (_, f, ()) ->
                 let cont = vm.CaptureCont()
-                vm.Apply f [Sexp.Pure (Native.Builtin (builtinCont cont))]
+                vm.Apply(f, [Sexp.Pure (Native.Builtin (builtinCont cont))])
     ]
     register builtin "never" [
         ("never", "f", Rest "args") ->>
-            fun vm (_, f, args) -> vm.ApplyNever f args
+            fun vm (_, f, args) -> vm.ApplyNever(f, args)
     ]
 
     register builtin "str" [

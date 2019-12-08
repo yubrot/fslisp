@@ -1,5 +1,6 @@
 namespace Fslisp.Core
 
+[<Struct>]
 type Pattern =
     { Fixed: string list
       Rest: string option }

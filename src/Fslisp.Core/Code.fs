@@ -17,13 +17,13 @@ type Inst<'T> =
     | Def of string
     | Set of string
 
-and Code<'T> =
-    { Instructions: Inst<'T> list }
+and [<Struct>] Code<'T> =
+    | Code of Inst<'T> list
 
     member self.Next(): (Inst<'T> * Code<'T>) option =
-        match self.Instructions with
-        | [] -> None
-        | inst :: rest -> Some (inst, { Instructions = rest })
+        match self with
+        | Code [] -> None
+        | Code (inst :: rest) -> Some (inst, Code rest)
 
     override self.ToString() =
         let mutable blockId = 0
@@ -58,13 +58,13 @@ and Code<'T> =
             | Inst.Set s ->
                 buf <+ "set " <+ s
 
-        and printCode header code =
+        and printCode (header: string) (Code insts) =
             let id = sprintf "[%d %s]" blockId header
             let buf = StringBuilder()
             blockId <- blockId + 1
             blocks.Add(buf)
             buf <+ id <+ "\n" |> ignore
-            for inst in code.Instructions do
+            for inst in insts do
                 buf <+ "  " |> ignore
                 printInst buf inst |> ignore
                 buf <+ "\n" |> ignore

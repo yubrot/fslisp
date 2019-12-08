@@ -6,7 +6,7 @@ type Compiler(compilerEnv: Env<Value>) =
     let code = List<Inst<Value>>()
 
     member _.Complete(): Code<Value> =
-        { Instructions = List.ofSeq code }
+        Code (List.ofSeq code)
 
     member _.Do (inst: Inst<Value>) =
         code.Add inst

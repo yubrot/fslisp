@@ -13,8 +13,10 @@ type MatchFailedReason =
 
 exception MatchFailedException of MatchFailedReason
 
+[<Struct>]
 type Match = Match
 
+[<Struct>]
 type Placeholder = Placeholder
 
 let inline private instance (a: ^a, b: ^b) =
@@ -27,6 +29,7 @@ let inline tryMatch m x =
     try Ok (match' m x)
     with MatchFailedException e -> Error (placeholder m, e)
 
+[<Struct>]
 type Num = Num of string with
     static member inline Instance(Match, Num _) =
         function
@@ -35,6 +38,7 @@ type Num = Num of string with
     static member inline Instance(Placeholder, Num label) =
         Sexp.Sym label
 
+[<Struct>]
 type Sym = Sym of string with
     static member inline Instance(Match, Sym _) =
         function
@@ -43,6 +47,7 @@ type Sym = Sym of string with
     static member inline Instance(Placeholder, Sym label) =
         Sexp.Sym label
 
+[<Struct>]
 type Str = Str of string with
     static member inline Instance(Match, Str _) =
         function
@@ -51,6 +56,7 @@ type Str = Str of string with
     static member inline Instance(Placeholder, Str label) =
         Sexp.Sym label
 
+[<Struct>]
 type Cons< ^a, ^b> = Cons of ^a * ^b with
     static member inline Instance(Match, Cons (a, b)) =
         function
@@ -59,6 +65,7 @@ type Cons< ^a, ^b> = Cons of ^a * ^b with
     static member inline Instance(Placeholder, Cons (a, b)) =
         Sexp.Cons (placeholder a, placeholder b)
 
+[<Struct>]
 type Nil = Nil with
     static member inline Instance(Match, Nil) =
         function
@@ -67,6 +74,7 @@ type Nil = Nil with
     static member inline Instance(Placeholder, Nil) =
         Sexp.Nil
 
+[<Struct>]
 type Bool = Bool of string with
     static member inline Instance(Match, Bool _) =
         function
@@ -75,6 +83,7 @@ type Bool = Bool of string with
     static member inline Instance(Placeholder, Bool label) =
         Sexp.Sym label
 
+[<Struct>]
 type List< ^a> = List of ^a with
     static member inline Instance(Match, List a) =
         function
@@ -83,6 +92,7 @@ type List< ^a> = List of ^a with
     static member inline Instance(Placeholder, List a) =
         Sexp.List [placeholder a; Sexp.Sym "..."]
 
+[<Struct>]
 type Vec = Vec of string with
     static member inline Instance(Match, Vec _) =
         function
@@ -91,6 +101,7 @@ type Vec = Vec of string with
     static member inline Instance(Placeholder, Vec label) =
         Sexp.Sym label
 
+[<Struct>]
 type Port = Port of string with
     static member inline Instance(Match, Port _) =
         function
@@ -99,6 +110,7 @@ type Port = Port of string with
     static member inline Instance(Placeholder, Port label) =
         Sexp.Sym label
 
+[<Struct>]
 type Pat = Pat of string with
     static member inline Instance(Match, Pat _) =
         fun x ->
@@ -157,6 +169,7 @@ type Placeholder with
     static member inline Instance(Placeholder, t) = Tuple.placeholder4 t
     static member inline Instance(Placeholder, t) = Tuple.placeholder5 t
 
+[<Struct>]
 type Rest< ^a> = Rest of ^a with
     static member inline Instance(Match, Rest a) =
         List.map (match' a)

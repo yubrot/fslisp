@@ -10,12 +10,12 @@ type MacroExpander(context: IContext) =
                     Sexp.List (syntax.MacroExpand self (m :: args))
                 else
                     expr
-            | Some (Sexp.Pure (Native.Macro (menv, mpat, mcode))) ->
-                let env = Env(Some menv)
-                match Pattern.bind mpat args with
+            | Some (Sexp.Pure (Native.Macro closure)) ->
+                let env = Env(Some closure.Env)
+                match Pattern.bind closure.Pattern args with
                 | Ok mapping ->
                     Map.iter env.Define mapping
-                    let expr = VM.Execute context env mcode
+                    let expr = VM.Execute context env closure.Body
                     if recurse then self.Expand true expr else expr
                 | Error e ->
                     raise (EvaluationErrorException ("This macro " + e))
