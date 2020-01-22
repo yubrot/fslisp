@@ -1,8 +1,8 @@
 test:
 	dotnet test
 
-test-lispboot:
-	dotnet run -p src/Fslisp.Driver -- -test lispboot/test
+test-rosetta-lisp:
+	dotnet run -p src/Fslisp.Driver -- -test rosetta-lisp/test
 
 build:
 	dotnet build -c Release
