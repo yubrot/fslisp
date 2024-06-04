@@ -6,7 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="ByteString.fs" />
     <Compile Include="Sexp.fs" />
     <Compile Include="Pattern.fs" />
     <Compile Include="Parser.fs" />

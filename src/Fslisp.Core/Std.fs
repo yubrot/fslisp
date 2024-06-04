@@ -40,7 +40,7 @@ let private tryIO f =
     try
         Sexp.Cons(Sexp.Bool true, f ())
     with :? SystemException as e ->
-        Sexp.Cons(Sexp.Bool false, Sexp.Str(ByteString.encode e.Message))
+        Sexp.Cons(Sexp.Bool false, Sexp.Str(e.Message))
 
 let builtinCont (cont: Cont) =
     builtin
@@ -56,7 +56,7 @@ let builtinCont (cont: Cont) =
           ->> fun vm (_, _) -> raise (EvaluationErrorException "Multiple values are not implemented") ]
 
 let builtinArgs (name: string, args: string list) =
-    let args = args |> List.map (ByteString.encode >> Sexp.Str) |> Sexp.List
+    let args = args |> List.map Sexp.Str |> Sexp.List
     builtin [ ("args", ()) ->> fun vm (_, ()) -> vm.Push args ]
 
 let install (args: string list) (registry: BuiltinRegistry) =
@@ -72,7 +72,7 @@ let install (args: string list) (registry: BuiltinRegistry) =
     <| [ ("error", ())
          ->> fun vm (_, ()) -> raise (EvaluationErrorException "error called")
          ("error", Str "msg", ())
-         ->> fun vm (_, msg, ()) -> raise (EvaluationErrorException(ByteString.decode msg)) ]
+         ->> fun vm (_, msg, ()) -> raise (EvaluationErrorException(msg)) ]
 
     register builtinGensym "gensym" "gensym"
 
@@ -138,19 +138,20 @@ let install (args: string list) (registry: BuiltinRegistry) =
     <| [ ("never", "f", Rest "args") ->> fun vm (_, f, args) -> vm.ApplyNever(f, args) ]
 
     register builtin "str"
-    <| [ ("str", Rest(Num "bytes"))
-         ->> fun vm (_, bytes) ->
-             let str =
-                 bytes
+    <| [ ("str", Rest(Num "chars"))
+         ->> fun vm (_, chars) ->
+             let chars =
+                 chars
                  |> Seq.map (fun i ->
-                     if i < 0.0 || 256.0 <= i then
-                         raise (EvaluationErrorException "Each byte of string must be inside the range 0-255")
+                     if i < float Char.MinValue || float Char.MaxValue < i then
+                         raise (
+                             EvaluationErrorException
+                                 $"Each character of string must be inside the range {int Char.MinValue}-{int Char.MaxValue}"
+                         )
                      else
-                         byte i)
-                 |> Array.ofSeq
-                 |> ByteString.Create
+                         char i)
 
-             vm.Push(Sexp.Str str) ]
+             vm.Push(Sexp.Str(new String(Array.ofSeq (chars)))) ]
 
     register builtin "str-char-at"
     <| [ ("str-char-at", Str "string", Num "index", ())
@@ -169,32 +170,28 @@ let install (args: string list) (registry: BuiltinRegistry) =
 
     register builtin "str-concat"
     <| [ ("str-concat", Rest(Str "strs"))
-         ->> fun vm (_, strs) -> vm.Push(Sexp.Str(ByteString.concat strs)) ]
+         ->> fun vm (_, strs) -> vm.Push(Sexp.Str(String.concat "" strs)) ]
 
     register builtin "substr"
-    <| [ ("substr", Str "str", Num "index", Num "bytesize", ())
-         ->> fun vm (_, str, index, bytesize, ()) ->
-             let substr =
-                 try
-                     str.[int index .. int index + int bytesize - 1]
-                 with :? IndexOutOfRangeException ->
-                     raise (EvaluationErrorException "Index out of range")
-
-             vm.Push(Sexp.Str substr) ]
+    <| [ ("substr", Str "str", Num "index", Num "length", ())
+         ->> fun vm (_, str, index, length, ()) ->
+             if int index < 0 || str.Length < int index + int length then
+                 raise (EvaluationErrorException "Index out of range")
+             else
+                 vm.Push(Sexp.Str str.[int index .. int index + int length - 1]) ]
 
     register builtin "sym->str"
-    <| [ ("sym->str", Sym "symbol", ())
-         ->> fun vm (_, sym, ()) -> vm.Push(Sexp.Str(ByteString.encode sym)) ]
+    <| [ ("sym->str", Sym "symbol", ()) ->> fun vm (_, sym, ()) -> vm.Push(Sexp.Str(sym)) ]
 
     register builtin "num->str"
     <| [ ("num->str", Num "number", ())
-         ->> fun vm (_, num, ()) -> vm.Push(Sexp.Str(ByteString.encode (num.ToString()))) ]
+         ->> fun vm (_, num, ()) -> vm.Push(Sexp.Str(num.ToString())) ]
 
     register builtin "str->num"
     <| [ ("str->num", Str "string", ())
          ->> fun vm (_, str, ()) ->
              let num =
-                 match Double.TryParse(ByteString.decode str) with
+                 match Double.TryParse(str) with
                  | true, num -> Sexp.Num num
                  | false, _ -> Sexp.Nil
 
@@ -249,8 +246,8 @@ let install (args: string list) (registry: BuiltinRegistry) =
     <| [ ("read-file-text", Str "filepath", ())
          ->> fun vm (_, filepath, ()) ->
              fun () ->
-                 let contents = File.ReadAllText(ByteString.decode (filepath))
-                 Sexp.Str(ByteString.encode (contents))
+                 let contents = File.ReadAllText((filepath))
+                 Sexp.Str(contents)
              |> tryIO
              |> vm.Push ]
 
@@ -258,7 +255,7 @@ let install (args: string list) (registry: BuiltinRegistry) =
     <| [ ("write-file-text", Str "filepath", Str "contents", ())
          ->> fun vm (_, filepath, contents, ()) ->
              fun () ->
-                 File.WriteAllText(ByteString.decode (filepath), ByteString.decode (contents))
+                 File.WriteAllText(filepath, contents)
                  Sexp.Nil
              |> tryIO
              |> vm.Push ]
@@ -269,7 +266,7 @@ let install (args: string list) (registry: BuiltinRegistry) =
              fun () ->
                  match stdin.ReadLine() with
                  | null -> Sexp.Nil
-                 | text -> Sexp.Str(ByteString.encode (text))
+                 | text -> Sexp.Str(text)
              |> tryIO
              |> vm.Push ]
 
@@ -277,7 +274,7 @@ let install (args: string list) (registry: BuiltinRegistry) =
     <| [ ("write-console", Str "text", ())
          ->> fun vm (_, text, ()) ->
              fun () ->
-                 stdout.Write(ByteString.decode (text))
+                 stdout.Write(text)
                  stdout.Flush()
                  Sexp.Nil
              |> tryIO
@@ -290,18 +287,18 @@ let install (args: string list) (registry: BuiltinRegistry) =
          ->> fun vm (_, expr, ()) ->
              match vm.Context.Eval expr with
              | Ok v -> vm.Push(Sexp.Cons(Sexp.Bool true, v))
-             | Error e -> vm.Push(Sexp.Cons(Sexp.Bool false, Sexp.Str(ByteString.encode e))) ]
+             | Error e -> vm.Push(Sexp.Cons(Sexp.Bool false, Sexp.Str(e))) ]
 
     register builtin "macroexpand"
     <| [ ("macroexpand", "expr", ())
          ->> fun vm (_, expr, ()) ->
              match vm.Context.MacroExpand true expr with
              | Ok v -> vm.Push(Sexp.Cons(Sexp.Bool true, v))
-             | Error e -> vm.Push(Sexp.Cons(Sexp.Bool false, Sexp.Str(ByteString.encode e))) ]
+             | Error e -> vm.Push(Sexp.Cons(Sexp.Bool false, Sexp.Str(e))) ]
 
     register builtin "macroexpand-1"
     <| [ ("macroexpand-1", "expr", ())
          ->> fun vm (_, expr, ()) ->
              match vm.Context.MacroExpand false expr with
              | Ok v -> vm.Push(Sexp.Cons(Sexp.Bool true, v))
-             | Error e -> vm.Push(Sexp.Cons(Sexp.Bool false, Sexp.Str(ByteString.encode e))) ]
+             | Error e -> vm.Push(Sexp.Cons(Sexp.Bool false, Sexp.Str(e))) ]

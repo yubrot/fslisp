@@ -17,8 +17,8 @@ let parseAtomTest () =
     Assert.Equal(Ok(Sexp.Num 3.14), parseToEnd sexp "test" "3.14")
     Assert.Equal(Ok(Sexp.Sym "foo"), parseToEnd sexp "test" "foo")
     Assert.Equal(Ok(Sexp.Sym "*foo-bar+baz"), parseToEnd sexp "test" "*foo-bar+baz")
-    Assert.Equal(Ok(Sexp.Str(ByteString.encode "Hello, World!\n")), parseToEnd sexp "test" "\"Hello, World!\\n\"")
-    Assert.Equal(Ok(Sexp.Str(ByteString.encode " \" \\ \r \t ")), parseToEnd sexp "test" "\" \\\" \\\\ \\r \\t \"")
+    Assert.Equal(Ok(Sexp.Str("Hello, World!\n")), parseToEnd sexp "test" "\"Hello, World!\\n\"")
+    Assert.Equal(Ok(Sexp.Str(" \" \\ \r \t ")), parseToEnd sexp "test" "\" \\\" \\\\ \\r \\t \"")
     Assert.Equal(Ok(Sexp.Bool true), parseToEnd sexp "test" "#t")
     Assert.Equal(Ok(Sexp.Bool false), parseToEnd sexp "test" "#f")
 
@@ -33,11 +33,7 @@ let parseListTest () =
     )
 
     Assert.Equal(
-        Ok(
-            Sexp.List
-                [ Sexp.Num 1.0
-                  Sexp.List [ Sexp.Sym "b"; Sexp.List [ Sexp.Str(ByteString.encode "c") ] ] ]
-        ),
+        Ok(Sexp.List [ Sexp.Num 1.0; Sexp.List [ Sexp.Sym "b"; Sexp.List [ Sexp.Str("c") ] ] ]),
         parseToEnd sexp "test" "[1 (b [\"c\"])]"
     )
 
@@ -56,7 +52,7 @@ let parseListTest () =
 [<Fact>]
 let parseProgramTest () =
     Assert.Equal(
-        Ok([ Sexp.Num 123.0; Sexp.Nil; Sexp.Sym "foo"; Sexp.Str(ByteString.encode "bar") ]),
+        Ok([ Sexp.Num 123.0; Sexp.Nil; Sexp.Sym "foo"; Sexp.Str("bar") ]),
         parseToEnd program "test" "123 () foo ; test \n \"bar\""
     )
 

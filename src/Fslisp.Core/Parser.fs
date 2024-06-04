@@ -65,7 +65,7 @@ module private Grammar =
                   Token.Unquote >>. S |>> Sexp.Unquote
                   Token.Num |>> Sexp.Num
                   Token.Sym |>> Sexp.Sym
-                  Token.Str |>> (ByteString.encode >> Sexp.Str)
+                  Token.Str |>> Sexp.Str
                   Token.True >>% Sexp.Bool true
                   Token.False >>% Sexp.Bool false ]
 

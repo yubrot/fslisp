@@ -19,8 +19,7 @@ let symSignatureTest () =
 [<Fact>]
 let strSignatureTest () =
     let p = Str "body"
-    let str = ByteString.encode "foo"
-    Assert.Equal(Ok str, tryMatch p (Sexp.Str str))
+    Assert.Equal(Ok "foo", tryMatch p (Sexp.Str "foo"))
     Assert.Equal(Error(Sexp.Sym "body", TypeMismatch), tryMatch p (Sexp.Num 123.0))
 
 [<Fact>]
@@ -70,13 +69,11 @@ let tupleSignatureTest () =
         tryMatch (Sym "a", Sym "b", ()) [ Sexp.Sym "test" ]
     )
 
-    let text = ByteString.encode "test"
-
     Assert.Equal(
-        Ok(1.0, "foo", text, true, ()),
+        Ok(1.0, "foo", "test", true, ()),
         tryMatch
             (Num "a", Sym "b", Str "c", Bool "d", ())
-            [ Sexp.Num 1.0; Sexp.Sym "foo"; Sexp.Str text; Sexp.Bool true ]
+            [ Sexp.Num 1.0; Sexp.Sym "foo"; Sexp.Str "test"; Sexp.Bool true ]
     )
 
 [<Fact>]

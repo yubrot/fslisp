@@ -37,12 +37,14 @@ let runREPL (ctx: IContext) =
 
     while true do
         eprintf "> "
-        Console.Error.Flush()
-        let line = Console.In.ReadLine()
+        stderr.Flush()
 
-        match parseAndEval ctx "<stdin>" line with
-        | Ok v -> printfn "%s" (v.ToString())
-        | Error e -> printfn "%s" e
+        match stdin.ReadLine() with
+        | null -> printfn ""
+        | line ->
+            match parseAndEval ctx "<stdin>" line with
+            | Ok v -> printfn "%s" (v.ToString())
+            | Error e -> printfn "%s" e
 
 [<EntryPoint>]
 let main argv =

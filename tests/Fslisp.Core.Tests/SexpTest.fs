@@ -84,7 +84,7 @@ let sexpToString () =
     Assert.Equal("123", (Sexp.Num 123.0).ToString())
     Assert.Equal("3.14", (Sexp.Num 3.14).ToString())
     Assert.Equal("foo", (Sexp.Sym "foo").ToString())
-    Assert.Equal("\"Hello\\nWorld\"", (Sexp.Str(ByteString.encode "Hello\nWorld")).ToString())
+    Assert.Equal("\"Hello\\nWorld\"", (Sexp.Str("Hello\nWorld")).ToString())
     Assert.Equal("(#t . #f)", (Sexp.Cons(Sexp.Bool true, Sexp.Bool false)).ToString())
     Assert.Equal("(#t #f c)", (Sexp.List [ Sexp.Bool true; Sexp.Bool false; Sexp.Sym "c" ]).ToString())
     Assert.Equal("()", Sexp.Nil.ToString())

@@ -4,7 +4,7 @@ namespace Fslisp.Core
 type Sexp<'T> =
     | Num of float
     | Sym of string
-    | Str of ByteString
+    | Str of string
     | Cons of Sexp<'T> * Sexp<'T>
     | Nil
     | Bool of bool
@@ -32,7 +32,7 @@ type Sexp<'T> =
             else
                 sprintf "%A" n
         | Sym s -> s
-        | Str s -> sprintf "\"%s\"" (escape (ByteString.decode s))
+        | Str s -> sprintf "\"%s\"" (escape s)
         // FIXME: I want to use active patterns here but I couldn't figure
         //        out a good way (it seems impossible?)
         | Cons(Sym "quote", Cons(s, Nil)) -> "'" + s.ToString()
