@@ -5,10 +5,7 @@ open FParsec
 [<RequireQualifiedAccess>]
 module private Token =
     let ambient =
-        choice [
-            spaces1
-            skipChar ';' >>. skipManySatisfy (fun c -> c <> '\n')
-        ]
+        choice [ spaces1; skipChar ';' >>. skipManySatisfy (fun c -> c <> '\n') ]
         |> skipMany
 
     let lex p = p .>> ambient
@@ -25,62 +22,70 @@ module private Token =
     let Unquote = lex (skipChar ',')
     let UnquoteSplicing = lex (skipString ",@")
     let Num = lex pfloat <?> "number"
+
     let Sym =
         let isSpecial = isAnyOf "!$%&*+-/:<=>?@^_~"
         let f1 c = isLetter c || isSpecial c
         let f c = isLetter c || isDigit c || isSpecial c
         lex (many1Satisfy2L f1 f "symbol")
+
     let Str =
         let normal = manySatisfy (fun c -> c <> '\\' && c <> '"')
-        let escaped = skipChar '\\' >>. (anyOf "\\nrt\"" |>> function
-            | 'n' -> "\n"
-            | 'r' -> "\r"
-            | 't' -> "\t"
-            | c -> string c)
+
+        let escapeHead = skipChar '\\'
+
+        let escapeBody =
+            anyOf "\\nrt\""
+            |>> function
+                | 'n' -> "\n"
+                | 'r' -> "\r"
+                | 't' -> "\t"
+                | c -> string c
+
+        let escaped = escapeHead >>. escapeBody
+
         lex (between (pstring "\"") (pstring "\"") (stringsSepBy normal escaped))
 
 [<RequireQualifiedAccess>]
 module private Grammar =
-    let S, SRef = createParserForwardedToRef<Sexp<unit>, unit>()
+    let S, SRef = createParserForwardedToRef<Sexp<unit>, unit> ()
 
     let SInner =
-        pipe2 (many1 S) (opt (Token.Dot >>. S)) (fun ss t ->
-            Sexp.ListLike ss (Option.defaultValue Sexp.Nil t)
-        )
+        pipe2 (many1 S) (opt (Token.Dot >>. S)) (fun ss t -> Sexp.ListLike ss (Option.defaultValue Sexp.Nil t))
         <|>% Sexp.Nil
 
-    do SRef := choice [
-        Token.LParen >>. SInner .>> Token.RParen
-        Token.LBrack >>. SInner .>> Token.RBrack
-        Token.Quote >>. S |>> Sexp.Quote
-        Token.Quasiquote >>. S |>> Sexp.Quasiquote
-        Token.UnquoteSplicing >>. S |>> Sexp.UnquoteSplicing
-        Token.Unquote >>. S |>> Sexp.Unquote
-        Token.Num |>> Sexp.Num
-        Token.Sym |>> Sexp.Sym
-        Token.Str |>> (ByteString.encode >> Sexp.Str)
-        Token.True >>% Sexp.Bool true
-        Token.False >>% Sexp.Bool false
-    ]
+    do
+        SRef.Value <-
+            choice
+                [ Token.LParen >>. SInner .>> Token.RParen
+                  Token.LBrack >>. SInner .>> Token.RBrack
+                  Token.Quote >>. S |>> Sexp.Quote
+                  Token.Quasiquote >>. S |>> Sexp.Quasiquote
+                  Token.UnquoteSplicing >>. S |>> Sexp.UnquoteSplicing
+                  Token.Unquote >>. S |>> Sexp.Unquote
+                  Token.Num |>> Sexp.Num
+                  Token.Sym |>> Sexp.Sym
+                  Token.Str |>> (ByteString.encode >> Sexp.Str)
+                  Token.True >>% Sexp.Bool true
+                  Token.False >>% Sexp.Bool false ]
 
 type Parser<'T> = Parser<'T, unit>
 
-let sexp (): Parser<Sexp<'T>> =
+let sexp () : Parser<Sexp<'T>> =
     Grammar.S |>> Sexp.map (fun _ -> failwith "pure")
 
-let program (): Parser<Sexp<'T> list> =
-    many (sexp ())
+let program () : Parser<Sexp<'T> list> = many (sexp ())
 
-let parse (p: unit -> Parser<'T>) name input (start: int option): Result<'T * int, string> =
+let parse (p: unit -> Parser<'T>) name input (start: int option) : Result<'T * int, string> =
     match start with
     | None -> 0, runParserOnString (Token.ambient >>. (p ())) () name input
     | Some s -> s, runParserOnSubstring (p ()) () name input s (input.Length - s)
     |> function
-        | i, Success (r, _, p) -> Result<_, _>.Ok (r, i + int p.Index)
-        | _, Failure (e, _, _) -> Result<_, _>.Error e
+        | i, Success(r, _, p) -> Result<_, _>.Ok(r, i + int p.Index)
+        | _, Failure(e, _, _) -> Result<_, _>.Error e
 
-let parseToEnd (p: unit -> Parser<'T>) name input: Result<'T, string> =
+let parseToEnd (p: unit -> Parser<'T>) name input : Result<'T, string> =
     runParserOnString (Token.ambient >>. (p ()) .>> eof) () name input
     |> function
-        | Success (r, _, _) -> Result<_, _>.Ok r
-        | Failure (e, _, _) -> Result<_, _>.Error e
+        | Success(r, _, _) -> Result<_, _>.Ok r
+        | Failure(e, _, _) -> Result<_, _>.Error e

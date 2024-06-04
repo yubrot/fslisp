@@ -7,8 +7,7 @@ exception UndefinedVariableException of string
 type Env<'T>(parent: Env<'T> option) =
     let table = Dictionary<string, 'T>()
 
-    member _.Define key value =
-        table.[key] <- value
+    member _.Define key value = table.[key] <- value
 
     member _.Set key value =
         if table.ContainsKey(key) then

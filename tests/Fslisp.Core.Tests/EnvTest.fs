@@ -4,16 +4,16 @@ open Xunit
 open Fslisp.Core
 
 [<Fact>]
-let singleEnvTest() =
+let singleEnvTest () =
     let env = Env(None)
 
     Assert.Equal(None, env.Find "foo")
-    Assert.Throws<UndefinedVariableException>(fun () ->
-        env.Get "foo" |> ignore
-    ) |> ignore
-    Assert.Throws<UndefinedVariableException>(fun () ->
-        env.Set "foo" "value"
-    ) |> ignore
+
+    Assert.Throws<UndefinedVariableException>(fun () -> env.Get "foo" |> ignore)
+    |> ignore
+
+    Assert.Throws<UndefinedVariableException>(fun () -> env.Set "foo" "value")
+    |> ignore
 
     env.Define "foo" "value"
 
@@ -26,7 +26,7 @@ let singleEnvTest() =
     Assert.Equal("new-value", env.Get "foo")
 
 [<Fact>]
-let chainedEnvTest() =
+let chainedEnvTest () =
     let parent = Env(None)
     let child = Env(Some parent)
     parent.Define "foo" "value"
@@ -38,9 +38,9 @@ let chainedEnvTest() =
 
     Assert.Equal(Some "new-value", child.Find "foo")
     Assert.Equal(Some "new-value", parent.Find "foo")
-    Assert.Throws<UndefinedVariableException>(fun () ->
-        child.Set "bar" "value"
-    ) |> ignore
+
+    Assert.Throws<UndefinedVariableException>(fun () -> child.Set "bar" "value")
+    |> ignore
 
     child.Define "bar" "value"
 

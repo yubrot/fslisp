@@ -20,10 +20,10 @@ type Inst<'T> =
 and [<Struct>] Code<'T> =
     | Code of Inst<'T> list
 
-    member self.Next(): (Inst<'T> * Code<'T>) option =
+    member self.Next() : (Inst<'T> * Code<'T>) option =
         match self with
         | Code [] -> None
-        | Code (inst :: rest) -> Some (inst, Code rest)
+        | Code(inst :: rest) -> Some(inst, Code rest)
 
     override self.ToString() =
         let mutable blockId = 0
@@ -33,30 +33,20 @@ and [<Struct>] Code<'T> =
 
         let rec printInst (buf: StringBuilder) inst =
             match inst with
-            | Inst.Ldc c ->
-                buf <+ "ldc " <+ c
-            | Inst.Ldv v ->
-                buf <+ "ldv " <+ v
-            | Inst.Ldf (pattern, code) ->
-                buf <+ "ldf " <+ printCode ("fun " + pattern.ToString()) code
-            | Inst.Ldm (pattern, code) ->
-                buf <+ "ldm " <+ printCode ("macro " + pattern.ToString()) code
-            | Inst.Ldb s ->
-                buf <+ "ldb " <+ s
-            | Inst.Sel (a, b) ->
+            | Inst.Ldc c -> buf <+ "ldc " <+ c
+            | Inst.Ldv v -> buf <+ "ldv " <+ v
+            | Inst.Ldf(pattern, code) -> buf <+ "ldf " <+ printCode ("fun " + pattern.ToString()) code
+            | Inst.Ldm(pattern, code) -> buf <+ "ldm " <+ printCode ("macro " + pattern.ToString()) code
+            | Inst.Ldb s -> buf <+ "ldb " <+ s
+            | Inst.Sel(a, b) ->
                 let a = printCode "then" a
                 let b = printCode "else" b
                 buf <+ "sel " <+ a <+ " " <+ b
-            | Inst.App n ->
-                buf <+ "app " <+ n
-            | Inst.Leave ->
-                buf <+ "leave"
-            | Inst.Pop ->
-                buf <+ "pop"
-            | Inst.Def s ->
-                buf <+ "def " <+ s
-            | Inst.Set s ->
-                buf <+ "set " <+ s
+            | Inst.App n -> buf <+ "app " <+ n
+            | Inst.Leave -> buf <+ "leave"
+            | Inst.Pop -> buf <+ "pop"
+            | Inst.Def s -> buf <+ "def " <+ s
+            | Inst.Set s -> buf <+ "set " <+ s
 
         and printCode (header: string) (Code insts) =
             let id = sprintf "[%d %s]" blockId header
@@ -64,10 +54,12 @@ and [<Struct>] Code<'T> =
             blockId <- blockId + 1
             blocks.Add(buf)
             buf <+ id <+ "\n" |> ignore
+
             for inst in insts do
                 buf <+ "  " |> ignore
                 printInst buf inst |> ignore
                 buf <+ "\n" |> ignore
+
             id
 
         printCode "entry" self |> ignore

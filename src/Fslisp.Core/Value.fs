@@ -24,7 +24,7 @@ type Native =
         | Fun _ -> "<fun>"
         | Macro _ -> "<macro>"
         | Port _ -> "<port>"
-        | Vec a -> (Sexp.List (Sexp.Sym "vec" :: List.ofArray a)).ToString()
+        | Vec a -> (Sexp.List(Sexp.Sym "vec" :: List.ofArray a)).ToString()
 
 and Value = Sexp<Native>
 
@@ -34,19 +34,19 @@ and Closure =
       Body: Code<Value> }
 
 and IBuiltin =
-    abstract Run : IVM -> Value list -> unit
+    abstract Run: IVM -> Value list -> unit
 
 and ISyntax =
-    abstract MacroExpand : IMacroExpander -> Value list -> Value list
-    abstract Compile : ICompiler -> Value list -> unit
+    abstract MacroExpand: IMacroExpander -> Value list -> Value list
+    abstract Compile: ICompiler -> Value list -> unit
 
 and IVM =
-    abstract Push : Value -> unit
-    abstract Apply : Value * Value list -> unit
-    abstract ApplyNever : Value * Value list -> unit
-    abstract ApplyCont : Cont -> unit
-    abstract CaptureCont : unit -> Cont
-    abstract Context : IContext
+    abstract Push: Value -> unit
+    abstract Apply: Value * Value list -> unit
+    abstract ApplyNever: Value * Value list -> unit
+    abstract ApplyCont: Cont -> unit
+    abstract CaptureCont: unit -> Cont
+    abstract Context: IContext
 
 and Cont =
     { Stack: Value list
@@ -55,19 +55,19 @@ and Cont =
       Dump: (Env<Value> * Code<Value>) list }
 
 and IMacroExpander =
-    abstract Expand : recurse:bool -> Value -> Value
+    abstract Expand: recurse: bool -> Value -> Value
 
 and ICompiler =
-    abstract Do : Inst<Value> -> unit
-    abstract Eval : Value -> unit
-    abstract Block : (ICompiler -> unit) -> Code<Value>
+    abstract Do: Inst<Value> -> unit
+    abstract Eval: Value -> unit
+    abstract Block: (ICompiler -> unit) -> Code<Value>
 
 and IContext =
-    abstract TopLevel : Env<Value>
-    abstract Builtins : IBuiltinRegistry
+    abstract TopLevel: Env<Value>
+    abstract Builtins: IBuiltinRegistry
 
 and IBuiltinRegistry =
-    abstract Get : string -> IBuiltin option
+    abstract Get: string -> IBuiltin option
 
 [<RequireQualifiedAccess>]
 module Native =
