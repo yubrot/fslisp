@@ -94,7 +94,6 @@ let install (args: string list) (registry: BuiltinRegistry) =
     register builtinTest "bool?" ("bool?", Sexp.isBool)
     register builtinTest "proc?" ("proc?", Sexp.isPure Native.isProc)
     register builtinTest "meta?" ("meta?", Sexp.isPure Native.isMeta)
-    register builtinTest "port?" ("port?", Sexp.isPure Native.isPort)
     register builtinTest "vec?" ("vec?", Sexp.isPure Native.isVec)
 
     register builtin "+"
@@ -153,8 +152,8 @@ let install (args: string list) (registry: BuiltinRegistry) =
 
              vm.Push(Sexp.Str str) ]
 
-    register builtin "str-ref"
-    <| [ ("str-ref", Str "string", Num "index", ())
+    register builtin "str-char-at"
+    <| [ ("str-char-at", Str "string", Num "index", ())
          ->> fun vm (_, str, index, ()) ->
              let s =
                  try
@@ -164,8 +163,8 @@ let install (args: string list) (registry: BuiltinRegistry) =
 
              vm.Push s ]
 
-    register builtin "str-bytesize"
-    <| [ ("str-bytesize", Str "string", ())
+    register builtin "str-length"
+    <| [ ("str-length", Str "string", ())
          ->> fun vm (_, str, ()) -> vm.Push(Sexp.Num(float str.Length)) ]
 
     register builtin "str-concat"
@@ -211,8 +210,12 @@ let install (args: string list) (registry: BuiltinRegistry) =
              let a = Array.create (int length) init
              vm.Push(Sexp.Pure(Native.Vec a)) ]
 
-    register builtin "vec-ref"
-    <| [ ("vec-ref", Vec "vec", Num "index", ())
+    register builtin "vec-length"
+    <| [ ("vec-length", Vec "vec", ())
+         ->> fun vm (_, vec, ()) -> vm.Push(Sexp.Num(float vec.Length)) ]
+
+    register builtin "vec-get"
+    <| [ ("vec-get", Vec "vec", Num "index", ())
          ->> fun vm (_, vec, index, ()) ->
              let s =
                  try
@@ -221,10 +224,6 @@ let install (args: string list) (registry: BuiltinRegistry) =
                      Sexp.Nil
 
              vm.Push s ]
-
-    register builtin "vec-length"
-    <| [ ("vec-length", Vec "vec", ())
-         ->> fun vm (_, vec, ()) -> vm.Push(Sexp.Num(float vec.Length)) ]
 
     register builtin "vec-set!"
     <| [ ("vec-set!", Vec "vec", Num "index", "item", ())
@@ -246,126 +245,40 @@ let install (args: string list) (registry: BuiltinRegistry) =
 
              vm.Push Sexp.Nil ]
 
-    register builtin "open"
-    <| [ ("open", Str "filepath", Str "mode", ())
-         ->> fun vm (_, filepath, mode, ()) ->
+    register builtin "read-file-text"
+    <| [ ("read-file-text", Str "filepath", ())
+         ->> fun vm (_, filepath, ()) ->
              fun () ->
-                 let mode =
-                     match ByteString.decode mode with
-                     | "w" -> FileMode.Create
-                     | "r" -> FileMode.Open
-                     | mode -> raise (EvaluationErrorException("Unsupported mode for open: " + mode))
-
-                 let stream = File.Open(ByteString.decode filepath, mode)
-                 Sexp.Pure(Native.Port stream)
+                 let contents = File.ReadAllText(ByteString.decode (filepath))
+                 Sexp.Str(ByteString.encode (contents))
              |> tryIO
              |> vm.Push ]
 
-    register builtin "close"
-    <| [ ("close", Port "port", ())
-         ->> fun vm (_, port, ()) ->
+    register builtin "write-file-text"
+    <| [ ("write-file-text", Str "filepath", Str "contents", ())
+         ->> fun vm (_, filepath, contents, ()) ->
              fun () ->
-                 port.Dispose()
+                 File.WriteAllText(ByteString.decode (filepath), ByteString.decode (contents))
                  Sexp.Nil
              |> tryIO
              |> vm.Push ]
 
-    register builtin "stdin"
-    <| [ ("stdin", ())
-         ->> fun vm (_, ()) -> vm.Push(Sexp.Pure(Native.Port(Console.OpenStandardInput()))) ]
-
-    register builtin "stdout"
-    <| [ ("stdout", ())
-         ->> fun vm (_, ()) -> vm.Push(Sexp.Pure(Native.Port(Console.OpenStandardOutput()))) ]
-
-    register builtin "stderr"
-    <| [ ("stderr", ())
-         ->> fun vm (_, ()) -> vm.Push(Sexp.Pure(Native.Port(Console.OpenStandardError()))) ]
-
-    register builtin "read-byte"
-    <| [ ("read-byte", Port "port", ())
-         ->> fun vm (_, port, ()) ->
+    register builtin "read-console-line"
+    <| [ ("read-console-line", ())
+         ->> fun vm (_, ()) ->
              fun () ->
-                 let byte = port.ReadByte()
-                 if byte = -1 then Sexp.Sym "eof" else Sexp.Num(float byte)
+                 match stdin.ReadLine() with
+                 | null -> Sexp.Nil
+                 | text -> Sexp.Str(ByteString.encode (text))
              |> tryIO
              |> vm.Push ]
 
-    register builtin "read-str"
-    <| [ ("read-str", Num "bytesize", Port "port", ())
-         ->> fun vm (_, bytesize, port, ()) ->
+    register builtin "write-console"
+    <| [ ("write-console", Str "text", ())
+         ->> fun vm (_, text, ()) ->
              fun () ->
-                 let buf = Array.create (int bytesize) 0uy
-                 let read = port.Read(buf, 0, int bytesize)
-
-                 if read = 0 then
-                     Sexp.Sym "eof"
-                 else
-                     Sexp.Str(ByteString.Create(buf, 0, read))
-             |> tryIO
-             |> vm.Push ]
-
-    register builtin "read-line"
-    <| [ ("read-line", Port "port", ())
-         ->> fun vm (_, port, ()) ->
-             fun () ->
-                 let buf = Collections.Generic.List()
-
-                 let read () =
-                     match port.ReadByte() with
-                     | -1 -> false
-                     | 10 ->
-                         buf.Add(10uy)
-                         false // LF
-                     | c ->
-                         buf.Add(byte c)
-                         true
-
-                 while read () do
-                     ()
-
-                 match Array.ofSeq buf with
-                 | [||] -> Sexp.Sym "eof"
-                 | line -> Sexp.Str(ByteString.Create(line, 0, line.Length - 1))
-             |> tryIO
-             |> vm.Push ]
-
-    register builtin "write-byte"
-    <| [ ("write-byte", Num "byte", Port "port", ())
-         ->> fun vm (_, b, port, ()) ->
-             fun () ->
-                 port.WriteByte(byte b)
-                 Sexp.Num 1.0
-             |> tryIO
-             |> vm.Push ]
-
-    register builtin "write-str"
-    <| [ ("write-str", Str "str", Port "port", ())
-         ->> fun vm (_, str, port, ()) ->
-             fun () ->
-                 let seg = str.ArraySegment
-                 port.Write(seg.Array, seg.Offset, seg.Count)
-                 Sexp.Num(float str.Length)
-             |> tryIO
-             |> vm.Push ]
-
-    register builtin "write-line"
-    <| [ ("write-str", Str "str", Port "port", ())
-         ->> fun vm (_, str, port, ()) ->
-             fun () ->
-                 let seg = str.ArraySegment
-                 port.Write(seg.Array, seg.Offset, seg.Count)
-                 port.WriteByte 10uy // LF
-                 port.Flush()
-                 Sexp.Num(float (str.Length + 1))
-             |> tryIO
-             |> vm.Push ]
-
-    register builtin "flush"
-    <| [ ("flush", Port "port", ())
-         ->> fun vm (_, port, ()) ->
-             fun () ->
-                 port.Flush()
+                 stdout.Write(ByteString.decode (text))
+                 stdout.Flush()
                  Sexp.Nil
              |> tryIO
              |> vm.Push ]

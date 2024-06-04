@@ -79,6 +79,7 @@ type Cons< ^a, ^b> =
 type Nil = Nil
     with
 
+
         static member inline Instance(Match, Nil) =
             function
             | Sexp.Nil -> ()
@@ -119,17 +120,6 @@ type Vec =
         | _ -> raise (MatchFailedException TypeMismatch)
 
     static member inline Instance(Placeholder, Vec label) = Sexp.Sym label
-
-[<Struct>]
-type Port =
-    | Port of string
-
-    static member inline Instance(Match, Port _) =
-        function
-        | Sexp.Pure(Native.Port a) -> a
-        | _ -> raise (MatchFailedException TypeMismatch)
-
-    static member inline Instance(Placeholder, Port label) = Sexp.Sym label
 
 [<Struct>]
 type Pat =

@@ -14,7 +14,6 @@ type Native =
     | Syntax of ISyntax
     | Fun of Closure
     | Macro of Closure
-    | Port of System.IO.Stream
     | Vec of Value[]
 
     override self.ToString() =
@@ -23,7 +22,6 @@ type Native =
         | Syntax _ -> "<syntax>"
         | Fun _ -> "<fun>"
         | Macro _ -> "<macro>"
-        | Port _ -> "<port>"
         | Vec a -> (Sexp.List(Sexp.Sym "vec" :: List.ofArray a)).ToString()
 
 and Value = Sexp<Native>
@@ -81,11 +79,6 @@ module Native =
         match n with
         | Native.Syntax _
         | Native.Macro _ -> true
-        | _ -> false
-
-    let isPort n =
-        match n with
-        | Native.Port _ -> true
         | _ -> false
 
     let isVec n =
