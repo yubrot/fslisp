@@ -130,7 +130,7 @@ module Sexp =
 
     let isNil s =
         match s with
-        | Sexp.Nil _ -> true
+        | Sexp.Nil -> true
         | _ -> false
 
     let isBool s =
